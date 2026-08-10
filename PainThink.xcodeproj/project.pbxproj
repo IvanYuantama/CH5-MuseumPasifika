@@ -6,13 +6,31 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A15287C03026128800518651 /* onnxruntime in Frameworks */ = {isa = PBXBuildFile; productRef = A15287BF3026128800518651 /* onnxruntime */; };
+		A15287C23026128800518651 /* onnxruntime_extensions in Frameworks */ = {isa = PBXBuildFile; productRef = A15287C13026128800518651 /* onnxruntime_extensions */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		A15286603024539400518651 /* PainThink.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PainThink.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A15286C43024A2A000518651 /* Exceptions for "PainThink" folder in "PainThink" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = A152865F3024539400518651 /* PainThink */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A15286623024539400518651 /* PainThink */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A15286C43024A2A000518651 /* Exceptions for "PainThink" folder in "PainThink" target */,
+			);
 			path = PainThink;
 			sourceTree = "<group>";
 		};
@@ -23,6 +41,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A15287C23026128800518651 /* onnxruntime_extensions in Frameworks */,
+				A15287C03026128800518651 /* onnxruntime in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +85,8 @@
 			);
 			name = PainThink;
 			packageProductDependencies = (
+				A15287BF3026128800518651 /* onnxruntime */,
+				A15287C13026128800518651 /* onnxruntime_extensions */,
 			);
 			productName = PainThink;
 			productReference = A15286603024539400518651 /* PainThink.app */;
@@ -94,6 +116,9 @@
 			);
 			mainGroup = A15286573024539400518651;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A15287BE3026128800518651 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A15286613024539400518651 /* Products */;
 			projectDirPath = "";
@@ -253,9 +278,13 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = V7RKC8F8WN;
+				DEVELOPMENT_TEAM = 7RYX4867C4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PainThink/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Need camera usage";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Used to record your voice answer.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Used to transcribe your voice answer into text.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -285,9 +314,13 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = V7RKC8F8WN;
+				DEVELOPMENT_TEAM = 7RYX4867C4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PainThink/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Need camera usage";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Used to record your voice answer.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Used to transcribe your voice answer into text.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -332,6 +365,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A15287BE3026128800518651 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/microsoft/onnxruntime-swift-package-manager";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.24.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A15287BF3026128800518651 /* onnxruntime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A15287BE3026128800518651 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */;
+			productName = onnxruntime;
+		};
+		A15287C13026128800518651 /* onnxruntime_extensions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A15287BE3026128800518651 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */;
+			productName = onnxruntime_extensions;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A15286583024539400518651 /* Project object */;
 }

@@ -1,0 +1,23 @@
+{
+  "MLModelVersionStringKey" : "8.4.115",
+  "MLModelDescriptionKey" : "Ultralytics YOLO26n model trained on data.yaml",
+  "MLModelCreatorDefinedKey" : {
+    "batch" : "1",
+    "head" : "Detect",
+    "com.github.apple.coremltools.version" : "9.0",
+    "docs" : "https:\/\/docs.ultralytics.com",
+    "names" : "{0: 'painting'}",
+    "imgsz" : "[416, 416]",
+    "com.github.apple.coremltools.conversion_date" : "2026-08-07",
+    "channels" : "3",
+    "date" : "2026-08-07T16:37:14.493586+08:00",
+    "args" : "{'batch': 1, 'quantize': None, 'dynamic': False, 'nms': False}",
+    "stride" : "32",
+    "com.github.apple.coremltools.source_dialect" : "TorchScript",
+    "com.github.apple.coremltools.source" : "torch==2.13.0",
+    "task" : "detect",
+    "end2end" : "True"
+  },
+  "MLModelAuthorKey" : "Ultralytics",
+  "MLModelLicenseKey" : "AGPL-3.0 License (https:\/\/ultralytics.com\/license)"
+}
