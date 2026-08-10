@@ -9,19 +9,18 @@ import UIKit
 import CoreVideo
 import OnnxRuntimeBindings
 
-/// Service deteksi menggunakan ONNX Runtime untuk model YOLO
 final class CoreMLArtworkDetectionService: ArtworkDetectionServicing {
     
     private var ortSession: ORTSession?
     private var ortEnv: ORTEnv?
-    private let inputSize: CGFloat = 640
+    private let inputSize: CGFloat = 416
     private let confidenceThreshold: Float = 0.25
     private let iouThreshold: Float = 0.45
-    private let paintingClassId: Int = 0 // ID kelas untuk "painting"
+    private let paintingClassId: Int = 0
 
     init() {
         // 1. Load file 'yolo26.onnx' dari Bundle project
-        guard let modelPath = Bundle.main.path(forResource: "yolo26", ofType: "onnx") else {
+        guard let modelPath = Bundle.main.path(forResource: "yolo26amadeus", ofType: "onnx") else {
             print("❌ File yolo26.onnx tidak ditemukan di Bundle.")
             return
         }
