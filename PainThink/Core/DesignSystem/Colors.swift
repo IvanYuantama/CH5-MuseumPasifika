@@ -19,4 +19,10 @@ extension Color {
 
     // Overlay/scrim di atas preview kamera
     static let scrim = Color.black.opacity(0.35)
+    
+    
+    // New Color from Design
+    static let color1 = Color(red: 255 / 255, green: 251 / 255, blue: 245 / 255)
+        static let color2 = Color(red: 255 / 255, green: 255 / 255, blue: 255 / 255)
+        static let color3 = Color(red: 255 / 255, green: 207 / 255, blue: 0 / 255)
 }
