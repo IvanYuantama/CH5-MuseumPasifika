@@ -38,11 +38,18 @@ enum ActivityGenerator {
             }
         }
 
+        let dragOptions = Array(emojiMoodOptions.shuffled().prefix(4)).map(\.moodLabel)
+
         return [
             Activity(
                 kind: .emojiMood,
                 prompt: "Apa yang kamu rasakan saat melihat lukisan ini?",
                 emojiOptions: Array(emojiMoodOptions.shuffled().prefix(5))
+            ),
+            Activity(
+                kind: .dragAndDrop,
+                prompt: "Tarik mood yang paling menggambarkan lukisan ini ke kotak jawaban",
+                dragOptions: dragOptions
             ),
             Activity(
                 kind: .colorPaletteMood,
@@ -53,11 +60,6 @@ enum ActivityGenerator {
                 kind: .emojiMood,
                 prompt: "Bagaimana suasana hati yang kamu tangkap dari lukisan ini?",
                 emojiOptions: Array(emojiMoodOptions.shuffled().prefix(5))
-            ),
-            Activity(
-                kind: .colorPaletteMood,
-                prompt: "Pilih warna yang paling menarik perhatianmu dari lukisan ini",
-                paletteOptions: paletteOptions()
             ),
         ]
     }

@@ -21,10 +21,10 @@ struct EmojiMoodPickerView: View {
                         .font(.system(size: 28))
                         .padding(10)
                         .background(
-                            Circle().fill(isSelected ? Color.brass.opacity(0.35) : Color.white.opacity(0.08))
+                            Circle().fill(isSelected ? Color.color3.opacity(0.35) : Color.black.opacity(0.05))
                         )
                         .overlay(
-                            Circle().stroke(isSelected ? Color.brass : .clear, lineWidth: 2)
+                            Circle().stroke(isSelected ? Color.color3 : .clear, lineWidth: 2)
                         )
                 }
                 .buttonStyle(.plain)

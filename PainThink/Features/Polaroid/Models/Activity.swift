@@ -10,6 +10,7 @@ import SwiftUI
 enum ActivityKind: String {
     case emojiMood
     case colorPaletteMood
+    case dragAndDrop
 }
 
 struct EmojiMoodOption: Identifiable, Hashable {
@@ -30,4 +31,5 @@ struct Activity: Identifiable {
     let prompt: String
     var emojiOptions: [EmojiMoodOption] = []
     var paletteOptions: [PaletteMoodOption] = []
+    var dragOptions: [String] = []
 }

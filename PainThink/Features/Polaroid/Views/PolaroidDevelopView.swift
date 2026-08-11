@@ -8,6 +8,7 @@ import SwiftData
 
 struct PolaroidDevelopView: View {
     @State private var viewModel: PolaroidDevelopViewModel
+    @State private var currentPage = 0
     @Environment(\.modelContext) private var modelContext
     let onDismiss: () -> Void
 
@@ -16,47 +17,84 @@ struct PolaroidDevelopView: View {
         self.onDismiss = onDismiss
     }
 
+    private var isLastActivity: Bool {
+        currentPage == viewModel.activities.count - 1
+    }
+
     var body: some View {
         ZStack {
-            Color.galleryBackground.ignoresSafeArea()
+            Color.color1.ignoresSafeArea()
 
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: 14) {
                     PolaroidFrameView(
                         image: viewModel.image,
+                        title: viewModel.paintingTitle,
+                        artist: viewModel.artistName,
+                        year: viewModel.year,
+                        location: viewModel.location,
+                        captureDate: viewModel.captureDate,
                         isUnlocked: viewModel.isUnlocked,
                         progress: viewModel.completedCount,
-                        total: viewModel.activities.count,
-                        caption: viewModel.detectedLabel
+                        total: viewModel.activities.count
                     )
-                    .padding(.top, 24)
+                    .padding(.top, 16)
+                    .padding(.horizontal, 24)
 
-                    VStack(spacing: 16) {
+                    TabView(selection: $currentPage) {
                         ForEach(Array(viewModel.activities.enumerated()), id: \.element.id) { index, activity in
                             ActivityCardView(
                                 activity: activity,
-                                index: index + 1,
                                 selectedLabel: viewModel.answers[activity.id]
                             ) { moodLabel in
                                 withAnimation {
                                     viewModel.select(moodLabel, for: activity)
                                 }
                             }
+                            .padding(.horizontal, 24)
+                            .tag(index)
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .frame(height: 300)
 
-                    Button("Ambil Foto Lagi") {
-                        onDismiss()
+                    pageIndicator
+
+                    if isLastActivity {
+                        retakeButton
+                            .padding(.horizontal, 24)
+                            .padding(.top, 8)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(Color.brass)
-                    .padding(.bottom, 32)
                 }
+                .padding(.bottom, 24)
             }
         }
         .task {
             await viewModel.start(context: modelContext)
         }
+    }
+
+    private var pageIndicator: some View {
+        HStack(spacing: 6) {
+            ForEach(viewModel.activities.indices, id: \.self) { index in
+                Circle()
+                    .fill(index == currentPage ? Color.color3 : Color.black.opacity(0.15))
+                    .frame(width: index == currentPage ? 7 : 6, height: index == currentPage ? 7 : 6)
+            }
+        }
+        .animation(.easeOut(duration: 0.2), value: currentPage)
+    }
+
+    private var retakeButton: some View {
+        Button(action: onDismiss) {
+            Text("Ambil Foto Lagi")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(.black.opacity(0.85))
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+        .stickerCard(cornerRadius: 12, fill: Color.color3)
     }
 }

@@ -21,7 +21,7 @@ struct PaletteMoodPickerView: View {
                         .fill(option.color)
                         .frame(width: 40, height: 40)
                         .overlay(
-                            Circle().stroke(isSelected ? Color.brass : Color.white.opacity(0.3), lineWidth: isSelected ? 3 : 1)
+                            Circle().stroke(isSelected ? Color.color3 : Color.black.opacity(0.15), lineWidth: isSelected ? 3 : 1)
                         )
                         .scaleEffect(isSelected ? 1.1 : 1)
                 }
