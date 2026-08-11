@@ -10,6 +10,7 @@ import SwiftUI
 struct CaptureView: View {
     @State private var viewModel = CaptureViewModel()
     @State private var showCamera = false
+    @State private var navigateToResult = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -46,9 +47,16 @@ struct CaptureView: View {
             }
         }
         .padding()
-        .sheet(isPresented: $showCamera) {
+        .sheet(isPresented: $showCamera, onDismiss: {
+            if viewModel.capturedImage != nil {
+                navigateToResult = true
+            }
+        }) {
             CameraView(capturedImage: $viewModel.capturedImage)
                 .ignoresSafeArea()
+        }
+        .navigationDestination(isPresented: $navigateToResult) {
+            DragAndDropView(paintingImage: viewModel.capturedImage)
         }
     }
 }

@@ -13,7 +13,9 @@ struct PainThinkApp: App {
 
     var body: some Scene {
         WindowGroup {
-            CaptureView()
+            NavigationStack {
+                CaptureView()
+            }
         }
     }
 }
