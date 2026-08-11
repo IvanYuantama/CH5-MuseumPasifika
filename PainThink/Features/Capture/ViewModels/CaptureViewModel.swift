@@ -11,22 +11,8 @@ import Observation
 @Observable
 final class CaptureViewModel {
     var capturedImage: UIImage?
-    var isDetecting = false
-    var detectionResult: DetectPaintResponse?
-    var errorMessage: String?
 
-    func detectPaint() async {
-        guard let image = capturedImage else { return }
-        isDetecting = true
-        errorMessage = nil
-
-        do {
-            let result = try await APIClient.shared.detectPaint(image: image)
-            detectionResult = result
-        } catch {
-            errorMessage = "Gagal mendeteksi lukisan. Coba lagi ya."
-        }
-
-        isDetecting = false
+    func reset() {
+        capturedImage = nil
     }
 }
