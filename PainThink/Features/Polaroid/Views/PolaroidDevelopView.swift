@@ -50,6 +50,14 @@ struct PolaroidDevelopView: View {
                                 withAnimation {
                                     viewModel.select(moodLabel, for: activity)
                                 }
+                                if index < viewModel.activities.count - 1 {
+                                    Task {
+                                        try? await Task.sleep(nanoseconds: 400_000_000)
+                                        withAnimation {
+                                            currentPage = index + 1
+                                        }
+                                    }
+                                }
                             }
                             .padding(.horizontal, 24)
                             .tag(index)

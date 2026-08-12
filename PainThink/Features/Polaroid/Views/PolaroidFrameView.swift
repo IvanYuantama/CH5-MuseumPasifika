@@ -20,6 +20,11 @@ struct PolaroidFrameView: View {
     private let cornerRadius: CGFloat = 6
     private let borderWidth: CGFloat = 16
     private var photoSize: CGFloat { cardWidth - borderWidth * 2 }
+
+    private var developOpacity: Double {
+        guard total > 0 else { return 0 }
+        return Double(total - progress) / Double(total)
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -39,6 +44,7 @@ struct PolaroidFrameView: View {
         .frame(width: cardWidth)
         .stickerCard(cornerRadius: cornerRadius, shadowOffset: CGSize(width: 5, height: 6))
         .animation(.spring(response: 0.6, dampingFraction: 0.7), value: isUnlocked)
+        .animation(.easeInOut(duration: 0.6), value: progress)
         .frame(maxWidth: .infinity)
     }
     
@@ -65,21 +71,11 @@ struct PolaroidFrameView: View {
                 .scaledToFill()
                 .frame(width: photoSize, height: photoSize)
                 .clipShape(RoundedRectangle(cornerRadius: 2))
-            
-            if !isUnlocked {
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(.ultraThinMaterial)
-                    .frame(width: photoSize, height: photoSize)
-                
-                VStack(spacing: 6) {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 26, weight: .semibold))
-                        .foregroundStyle(.black.opacity(0.8))
-                    Text("\(progress)/\(total) aktivitas selesai")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.black.opacity(0.8))
-                }
-            }
+
+            RoundedRectangle(cornerRadius: 2)
+                .fill(Color.black)
+                .frame(width: photoSize, height: photoSize)
+                .opacity(developOpacity)
         }
     }
     
@@ -95,7 +91,7 @@ struct PolaroidFrameView: View {
                 .foregroundStyle(.black.opacity(0.65))
                 .lineLimit(1)
             
-            Text(isUnlocked ? "Terbuka! 🎉  ·  \(captureDate)" : captureDate)
+            Text(captureDate)
                 .font(.museumCaption(.caption2))
                 .foregroundStyle(.black.opacity(0.5))
         }
