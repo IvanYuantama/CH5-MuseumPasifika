@@ -56,7 +56,7 @@ struct PolaroidDevelopView: View {
                         }
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
-                    .frame(height: 300)
+                    .frame(height: 250)
 
                     pageIndicator
 
@@ -66,7 +66,7 @@ struct PolaroidDevelopView: View {
                             .padding(.top, 8)
                     }
                 }
-                .padding(.bottom, 24)
+                .padding(.bottom, 15)
             }
         }
         .task {
@@ -88,7 +88,7 @@ struct PolaroidDevelopView: View {
     private var retakeButton: some View {
         Button(action: onDismiss) {
             Text("Ambil Foto Lagi")
-                .font(.system(size: 14, weight: .medium))
+                .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.black.opacity(0.85))
                 .padding(.horizontal, 20)
                 .padding(.vertical, 14)
