@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="35px" height="34px" viewBox="0 0 35 34" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Group</title>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Frame-2" transform="translate(-95, -80)" fill="#DDDDDD">
+            <g id="Group" transform="translate(95, 80)">
+                <rect id="Rectangle-5" x="0" y="31.5" width="35" height="2.33333333"></rect>
+                <rect id="Rectangle-6" x="1.16666667" y="29.1666667" width="32.6666667" height="2.33333333"></rect>
+                <rect id="Rectangle-7" x="2.33333333" y="28" width="8.16666667" height="1.16666667"></rect>
+                <rect id="Rectangle-8" x="12.8333333" y="28" width="9.33333333" height="1.16666667"></rect>
+                <rect id="Rectangle-9" x="24.5" y="28" width="8.16666667" height="1.16666667"></rect>
+                <rect id="Rectangle-10" x="3.5" y="11.6666667" width="5.83333333" height="16.3333333"></rect>
+                <rect id="Rectangle-10" x="25.6666667" y="11.6666667" width="5.83333333" height="16.3333333"></rect>
+                <rect id="Rectangle-11" x="14" y="11.6666667" width="7" height="16.3333333"></rect>
+                <rect id="Rectangle-12" x="1.16666667" y="9.33333333" width="32.6666667" height="3.5"></rect>
+                <polygon id="Path" points="32.6666667 9.33333333 17.5 0 2.33333333 9.33333333"></polygon>
+            </g>
+        </g>
+    </g>
+</svg>

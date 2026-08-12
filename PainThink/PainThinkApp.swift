@@ -14,7 +14,7 @@ struct PainThinkApp: App {
 
     var body: some Scene {
         WindowGroup {
-            CaptureView()
+            RootView()
         }
         .modelContainer(for: PolaroidRecord.self)
     }
