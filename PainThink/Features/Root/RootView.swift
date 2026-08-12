@@ -90,6 +90,6 @@ private struct PlaceholderScreen: View {
     }
 }
 
-#Preview {
-    RootView()
-}
+// CATATAN: jangan tambahkan #Preview — Previews selalu crash di project ini
+// karena JIT executor gagal me-link static lib ONNX Runtime di app target.
+// Detail lengkap ada di komentar bawah PaintingDetailView.swift. Pakai Cmd+R.

@@ -80,20 +80,8 @@ struct PaintingDetailView: View {
     }
 }
 
-#Preview("Detail") {
-    NavigationStack {
-        PaintingDetailView(
-            painting: SamplePaintings.girlWithPearlEarring,
-            opinions: SamplePaintings.pearlEarringOpinions
-        )
-    }
-}
-
-#Preview("Belum ada opini") {
-    NavigationStack {
-        PaintingDetailView(
-            painting: SamplePaintings.starryNight,
-            opinions: []
-        )
-    }
-}
+// CATATAN: jangan tambahkan #Preview di project ini.
+// Xcode Previews SELALU crash ("Attempt to use unknown class", OBJC code 1)
+// karena JIT executor Previews gagal me-link static library ONNX Runtime yang
+// nempel di app target — bahkan preview Text kosong pun crash (sudah dibuktikan
+// di worktree bersih tanpa file UI). Lihat UI lewat Cmd+R (root = RootView).
