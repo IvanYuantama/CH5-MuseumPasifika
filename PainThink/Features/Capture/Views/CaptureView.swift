@@ -19,7 +19,7 @@ struct CaptureView: View {
                 }
             } else {
                 VStack(spacing: 20) {
-                    Button("Ambil Foto") {
+                    Button("Take Photo") {
                         showCamera = true
                     }
                     .buttonStyle(.borderedProminent)

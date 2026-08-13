@@ -11,19 +11,19 @@ import SwiftUI
 // call keyed by the detected painting without changing `Activity`'s shape.
 enum ActivityGenerator {
     private static let emojiMoodOptions: [EmojiMoodOption] = [
-        EmojiMoodOption(emoji: "😍", moodLabel: "Terpukau"),
-        EmojiMoodOption(emoji: "😌", moodLabel: "Tenang"),
-        EmojiMoodOption(emoji: "😮", moodLabel: "Takjub"),
-        EmojiMoodOption(emoji: "😢", moodLabel: "Haru"),
-        EmojiMoodOption(emoji: "😴", moodLabel: "Mengantuk"),
-        EmojiMoodOption(emoji: "😡", moodLabel: "Marah"),
-        EmojiMoodOption(emoji: "🥰", moodLabel: "Hangat"),
+        EmojiMoodOption(emoji: "😍", moodLabel: "Enchanted"),
+        EmojiMoodOption(emoji: "😌", moodLabel: "Calm"),
+        EmojiMoodOption(emoji: "😮", moodLabel: "Amazed"),
+        EmojiMoodOption(emoji: "😢", moodLabel: "Touched"),
+        EmojiMoodOption(emoji: "😴", moodLabel: "Sleepy"),
+        EmojiMoodOption(emoji: "😡", moodLabel: "Angry"),
+        EmojiMoodOption(emoji: "🥰", moodLabel: "Warm"),
     ]
 
     private static let fallbackPalette: [Color] = [.orange, .teal, .purple, .pink]
 
     private static let colorMoodLabels = [
-        "Bahagia", "Tenang", "Bersemangat", "Melankolis", "Misterius", "Hangat", "Berani", "Damai",
+        "Happy", "Calm", "Excited", "Melancholic", "Mysterious", "Warm", "Bold", "Peaceful",
     ]
 
     static func generateActivities(for image: UIImage) -> [Activity] {
@@ -43,22 +43,22 @@ enum ActivityGenerator {
         return [
             Activity(
                 kind: .emojiMood,
-                prompt: "Apa yang kamu rasakan saat melihat lukisan ini?",
+                prompt: "How do you feel looking at this painting?",
                 emojiOptions: Array(emojiMoodOptions.shuffled().prefix(5))
             ),
             Activity(
                 kind: .dragAndDrop,
-                prompt: "Tarik mood yang paling menggambarkan lukisan ini ke kotak jawaban",
+                prompt: "Drag the mood that best describes this painting into the answer box",
                 dragOptions: dragOptions
             ),
             Activity(
                 kind: .colorPaletteMood,
-                prompt: "Warna mana dari lukisan ini yang paling mewakili perasaanmu?",
+                prompt: "Which color from this painting best matches your feeling?",
                 paletteOptions: paletteOptions()
             ),
             Activity(
                 kind: .emojiMood,
-                prompt: "Bagaimana suasana hati yang kamu tangkap dari lukisan ini?",
+                prompt: "What mood do you sense from this painting?",
                 emojiOptions: Array(emojiMoodOptions.shuffled().prefix(5))
             ),
         ]

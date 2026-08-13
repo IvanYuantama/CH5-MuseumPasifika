@@ -73,10 +73,11 @@ struct PaintingDetailView: View {
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(.black.opacity(0.75))
                 .frame(width: 34, height: 34)
-                .stickerCard(cornerRadius: 17, shadowOffset: CGSize(width: 2, height: 3))
+                .background(Color.color2, in: Circle())
+                .overlay(Circle().stroke(.black.opacity(0.08), lineWidth: 1))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Kembali")
+        .accessibilityLabel("Back")
     }
 }
 

@@ -89,11 +89,13 @@ struct DragDropMoodPickerView: View {
             .gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .named("dragSpace"))
                     .onChanged { value in
+                        if draggingOption == nil { Haptics.tap() }
                         draggingOption = option
                         dragTranslation = value.translation
                     }
                     .onEnded { value in
                         if dropTargetFrame.contains(value.location) {
+                            Haptics.success()
                             onSelect(option)
                         }
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {

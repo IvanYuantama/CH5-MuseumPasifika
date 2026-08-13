@@ -15,6 +15,7 @@ struct PaletteMoodPickerView: View {
             ForEach(activity.paletteOptions) { option in
                 let isSelected = selectedLabel == option.moodLabel
                 Button {
+                    Haptics.success()
                     onSelect(option.moodLabel)
                 } label: {
                     Circle()

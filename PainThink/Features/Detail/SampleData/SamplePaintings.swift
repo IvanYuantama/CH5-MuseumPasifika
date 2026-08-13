@@ -32,14 +32,14 @@ enum SamplePaintings {
         let hour: TimeInterval = 3_600
 
         let recipe: [(statement: String, emoji: String, mood: String, hex: String, name: String)] = [
-            ("kalau anting itu mutiara", "😮", "Takjub", "#B99B63", "Rani"),
-            ("kalau anting itu mutiara", "😌", "Tenang", "#E4D5A8", "Bagas"),
-            ("kalau anting itu mutiara", "😮", "Takjub", "#B99B63", "Nadia"),
-            ("kalau anting itu mutiara", "🥰", "Hangat", "#7B86C4", "Fajar"),
-            ("kalau anting itu mutiara", "😌", "Tenang", "#E4D5A8", "Sari"),
-            ("kalau anting itu mutiara", "😮", "Takjub", "#B99B63", "Dimas"),
-            ("kalau anting itu mutiara", "😢", "Haru", "#1C1C1C", "Ayu"),
-            ("kalau dia sedang menoleh", "😌", "Tenang", "#E4D5A8", "Reza"),
+            ("the earring is a pearl", "😮", "Amazed", "#B99B63", "Rani"),
+            ("the earring is a pearl", "😌", "Calm", "#E4D5A8", "Bagas"),
+            ("the earring is a pearl", "😮", "Amazed", "#B99B63", "Nadia"),
+            ("the earring is a pearl", "🥰", "Warm", "#7B86C4", "Fajar"),
+            ("the earring is a pearl", "😌", "Calm", "#E4D5A8", "Sari"),
+            ("the earring is a pearl", "😮", "Amazed", "#B99B63", "Dimas"),
+            ("the earring is a pearl", "😢", "Touched", "#1C1C1C", "Ayu"),
+            ("she just turned around", "😌", "Calm", "#E4D5A8", "Reza"),
         ]
 
         return recipe.enumerated().map { index, item in

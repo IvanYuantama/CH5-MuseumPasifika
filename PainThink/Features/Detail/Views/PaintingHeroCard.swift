@@ -60,8 +60,8 @@ struct PaintingHeroCard: View {
 
     private var statRow: some View {
         HStack(spacing: 18) {
-            stat(systemImage: "heart", value: painting.likeCount, label: "suka")
-            stat(systemImage: "bubble.left", value: opinionCount, label: "opini")
+            stat(systemImage: "heart", value: painting.likeCount, label: "likes")
+            stat(systemImage: "bubble.left", value: opinionCount, label: "opinions")
             Spacer()
         }
     }

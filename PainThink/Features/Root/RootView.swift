@@ -57,36 +57,12 @@ struct RootView: View {
         case .expo:
             ExpoView(entries: SampleFeed.entries)
         case .collection:
-            PlaceholderScreen(title: "Collection", note: "Polaroid dan opini kamu sendiri.")
+            CollectionView()
         case .search:
-            PlaceholderScreen(title: "Search", note: "Cari lukisan berdasarkan judulnya.")
+            SearchView(entries: SampleFeed.entries)
         case .profile:
-            PlaceholderScreen(title: "Profile", note: "Statistik, mood palette, dan museum passport.")
+            ProfileView()
         }
-    }
-}
-
-// Stands in for the screens that aren't built yet, so the bar can be walked end
-// to end without three blank rectangles.
-private struct PlaceholderScreen: View {
-    let title: String
-    let note: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.system(size: 32, weight: .bold))
-                .foregroundStyle(.black)
-
-            Text(note)
-                .font(.system(size: 14))
-                .foregroundStyle(.black.opacity(0.45))
-
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 20)
-        .padding(.top, 16)
     }
 }
 

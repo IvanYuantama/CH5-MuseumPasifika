@@ -17,11 +17,26 @@ struct PolaroidDevelopView: View {
         self.onDismiss = onDismiss
     }
 
-    private var isLastActivity: Bool {
-        currentPage == viewModel.activities.count - 1
+    var body: some View {
+        Group {
+            if viewModel.isUnlocked {
+                PhotoDevelopedView(
+                    image: viewModel.image,
+                    title: viewModel.paintingTitle,
+                    artist: viewModel.artistName,
+                    year: viewModel.year,
+                    location: viewModel.location,
+                    captureDate: viewModel.captureDate,
+                    onBackToHome: onDismiss
+                )
+            } else {
+                developContent
+            }
+        }
+        .animation(.easeInOut(duration: 0.35), value: viewModel.isUnlocked)
     }
 
-    var body: some View {
+    private var developContent: some View {
         ZStack {
             Color.color1.ignoresSafeArea()
 
@@ -67,12 +82,6 @@ struct PolaroidDevelopView: View {
                     .frame(height: 250)
 
                     pageIndicator
-
-                    if isLastActivity {
-                        retakeButton
-                            .padding(.horizontal, 24)
-                            .padding(.top, 8)
-                    }
                 }
                 .padding(.bottom, 15)
             }
@@ -93,16 +102,4 @@ struct PolaroidDevelopView: View {
         .animation(.easeOut(duration: 0.2), value: currentPage)
     }
 
-    private var retakeButton: some View {
-        Button(action: onDismiss) {
-            Text("Ambil Foto Lagi")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.black.opacity(0.85))
-                .padding(.horizontal, 20)
-                .padding(.vertical, 14)
-                .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.plain)
-        .stickerCard(cornerRadius: 12, fill: Color.color3)
-    }
 }

@@ -66,7 +66,7 @@ struct ExpoView: View {
     }
 
     private func column(_ items: [FeedEntry]) -> some View {
-        VStack(spacing: gutter) {
+        VStack(spacing: 5) {
             ForEach(items) { entry in
                 NavigationLink(value: entry) {
                     ExpoCard(entry: entry)

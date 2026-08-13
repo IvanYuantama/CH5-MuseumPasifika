@@ -10,14 +10,14 @@ import SwiftUI
 struct ExpoCard: View {
     let entry: FeedEntry
 
-    private let inset: CGFloat = 12
+    private let inset: CGFloat = 10
 
     var body: some View {
         let insights = PaintingInsights(opinions: entry.opinions)
 
         VStack(alignment: .leading, spacing: 0) {
             LocationLabel(place: entry.painting.museum)
-                .padding(.top, inset)
+                .padding(.top, 11)
 
             HStack(spacing: 4) {
                 Image(systemName: "heart")
@@ -38,20 +38,20 @@ struct ExpoCard: View {
             .padding(.top, 10)
 
             if let headline = insights.headline {
-                Text("\(headline.percentage)% pengunjung bilang \(headline.statement)")
+                Text("\(headline.percentage)% of people say \(headline.statement)")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.black.opacity(0.85))
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity)
-                    .padding(.top, 12)
+                    .padding(.top, 8)
             }
 
             if !insights.colorFeelings.isEmpty {
                 Text("Color Feelings")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.black.opacity(0.55))
-                    .padding(.top, 14)
+                    .padding(.top, 10)
 
                 HStack(spacing: 7) {
                     ForEach(insights.colorFeelings) { feeling in
@@ -65,7 +65,7 @@ struct ExpoCard: View {
             }
         }
         .padding(.horizontal, inset)
-        .padding(.bottom, inset + 2)
+        .padding(.bottom, 16)
         .stickerCard(cornerRadius: 12, shadowOffset: CGSize(width: 4, height: 5))
     }
 }

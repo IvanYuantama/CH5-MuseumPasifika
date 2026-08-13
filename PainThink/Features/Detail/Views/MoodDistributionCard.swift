@@ -16,7 +16,7 @@ struct MoodDistributionCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            SectionLabel(text: "Mood pengunjung")
+            SectionLabel(text: "Visitor moods")
 
             VStack(spacing: 14) {
                 ForEach(moods) { mood in
@@ -48,7 +48,7 @@ struct MoodDistributionCard: View {
                 .frame(width: 40, alignment: .trailing)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(mood.label): \(mood.count) dari pengunjung")
+        .accessibilityLabel("\(mood.label): \(mood.count) visitors")
     }
 
     private func bar(share: Double) -> some View {

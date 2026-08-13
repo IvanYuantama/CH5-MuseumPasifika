@@ -129,6 +129,34 @@ final class CameraManager: NSObject {
     func stopSession() {
         session.stopRunning()
     }
+
+    // Zoom driven by rotating the shutter knob.
+    func setZoom(_ factor: Float) {
+        guard let input = session.inputs.first as? AVCaptureDeviceInput else { return }
+        let device = input.device
+        let clamped = max(1, min(CGFloat(factor), device.activeFormat.videoMaxZoomFactor))
+        do {
+            try device.lockForConfiguration()
+            device.videoZoomFactor = clamped
+            device.unlockForConfiguration()
+        } catch {
+            print("Failed to set zoom: \(error)")
+        }
+    }
+
+    // EV bias from the exposure ruler; clamped to what the device supports.
+    func setExposureBias(_ bias: Float) {
+        guard let input = session.inputs.first as? AVCaptureDeviceInput else { return }
+        let device = input.device
+        let clamped = max(device.minExposureTargetBias, min(device.maxExposureTargetBias, bias))
+        do {
+            try device.lockForConfiguration()
+            device.setExposureTargetBias(clamped)
+            device.unlockForConfiguration()
+        } catch {
+            print("Failed to set exposure bias: \(error)")
+        }
+    }
     
     func toggleLiveDetection() {
             isLiveDetectionEnabled.toggle()

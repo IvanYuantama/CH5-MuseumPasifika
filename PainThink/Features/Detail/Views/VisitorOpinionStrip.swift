@@ -14,14 +14,14 @@ struct VisitorOpinionStrip: View {
 
     private static let relativeFormatter: RelativeDateTimeFormatter = {
         let formatter = RelativeDateTimeFormatter()
-        formatter.locale = Locale(identifier: "id_ID")
+        formatter.locale = Locale(identifier: "en_US")
         formatter.unitsStyle = .abbreviated
         return formatter
     }()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            SectionLabel(text: "Kata pengunjung")
+            SectionLabel(text: "What visitors say")
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
@@ -67,6 +67,6 @@ struct VisitorOpinionStrip: View {
         .frame(width: 138, alignment: .leading)
         .stickerCard(cornerRadius: 12, shadowOffset: CGSize(width: 3, height: 4))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(opinion.visitorName) merasa \(opinion.moodLabel)")
+        .accessibilityLabel("\(opinion.visitorName) felt \(opinion.moodLabel)")
     }
 }

@@ -15,6 +15,7 @@ struct EmojiMoodPickerView: View {
             ForEach(activity.emojiOptions) { option in
                 let isSelected = selectedLabel == option.moodLabel
                 Button {
+                    Haptics.success()
                     onSelect(option.moodLabel)
                 } label: {
                     Text(option.emoji)

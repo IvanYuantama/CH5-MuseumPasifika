@@ -30,7 +30,7 @@ final class PolaroidDevelopViewModel {
 
         let formatter = DateFormatter()
         formatter.dateFormat = "d MMMM yyyy"
-        formatter.locale = Locale(identifier: "id_ID")
+        formatter.locale = Locale(identifier: "en_US")
         self.captureDate = formatter.string(from: Date())
     }
 
@@ -53,7 +53,7 @@ final class PolaroidDevelopViewModel {
             let result = try await APIClient.shared.detectPaint(image: image)
             newRecord.confidence = result.confidence
             if result.detected {
-                detectedLabel = "Lukisan terdeteksi"
+                detectedLabel = "Painting detected"
                 newRecord.detectedLabel = detectedLabel
             }
         } catch {

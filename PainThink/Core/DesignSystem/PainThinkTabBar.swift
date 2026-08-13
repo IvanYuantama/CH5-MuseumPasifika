@@ -133,7 +133,7 @@ struct PainThinkTabBar: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Pindai lukisan")
+        .accessibilityLabel("Scan a painting")
     }
 
     private func selectedItem(_ tab: AppTab) -> some View {

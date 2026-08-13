@@ -24,13 +24,13 @@ struct ConsensusCard: View {
                 .frame(width: 46, height: 4)
                 .padding(.top, 4)
 
-            Text("pengunjung bilang \(headline.statement)")
+            Text("of people say \(headline.statement)")
                 .font(.system(size: 17, weight: .medium))
                 .foregroundStyle(.black.opacity(0.75))
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 16)
 
-            Text("dari \(total) opini")
+            Text("based on \(total) opinions")
                 .font(.system(size: 12))
                 .foregroundStyle(.black.opacity(0.38))
                 .padding(.top, 8)
@@ -40,7 +40,7 @@ struct ConsensusCard: View {
         .stickerCard(cornerRadius: 14, shadowOffset: CGSize(width: 4, height: 5))
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
-            "\(headline.percentage) persen pengunjung bilang \(headline.statement), dari \(total) opini"
+            "\(headline.percentage) percent of people say \(headline.statement), based on \(total) opinions"
         )
     }
 }

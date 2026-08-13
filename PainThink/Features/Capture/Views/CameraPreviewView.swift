@@ -25,5 +25,25 @@ struct CameraPreviewView: UIViewRepresentable {
         var videoPreviewLayer: AVCaptureVideoPreviewLayer {
             layer as! AVCaptureVideoPreviewLayer
         }
+
+        // The preview layer doesn't follow interface rotation on its own; keep
+        // its video rotation in sync so landscape shows an upright feed.
+        override func layoutSubviews() {
+            super.layoutSubviews()
+
+            guard let connection = videoPreviewLayer.connection else { return }
+
+            let orientation = window?.windowScene?.interfaceOrientation ?? .portrait
+            let angle: CGFloat = switch orientation {
+            case .landscapeRight: 0
+            case .portraitUpsideDown: 270
+            case .landscapeLeft: 180
+            default: 90
+            }
+
+            if connection.isVideoRotationAngleSupported(angle) {
+                connection.videoRotationAngle = angle
+            }
+        }
     }
 }
