@@ -17,7 +17,7 @@ struct ExpoCard: View {
 
         VStack(alignment: .leading, spacing: 0) {
             LocationLabel(place: entry.painting.museum)
-                .padding(.top, 11)
+                .padding(.top, 10)
 
             HStack(spacing: 4) {
                 Image(systemName: "heart")
@@ -26,7 +26,7 @@ struct ExpoCard: View {
                     .font(.system(size: 11))
             }
             .foregroundStyle(.black.opacity(0.45))
-            .padding(.top, 5)
+            .padding(.top, 2)
 
             PaintingImageView(
                 assetName: entry.painting.assetName,
@@ -35,25 +35,25 @@ struct ExpoCard: View {
             .frame(maxWidth: .infinity)
             .aspectRatio(entry.aspectRatio, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: 3))
-            .padding(.top, 10)
+            .padding(.top, 11)
 
             if let headline = insights.headline {
                 Text("\(headline.percentage)% of people say \(headline.statement)")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.black.opacity(0.85))
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(.black)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity)
-                    .padding(.top, 8)
+                    .padding(.top, 10)
             }
 
             if !insights.colorFeelings.isEmpty {
                 Text("Color Feelings")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.black.opacity(0.55))
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(.black)
                     .padding(.top, 10)
 
-                HStack(spacing: 7) {
+                HStack(spacing: 3) {
                     ForEach(insights.colorFeelings) { feeling in
                         Circle()
                             .fill(feeling.color)
@@ -61,11 +61,14 @@ struct ExpoCard: View {
                             .accessibilityLabel(feeling.label)
                     }
                 }
-                .padding(.top, 7)
+                .padding(.top, 3)
             }
         }
         .padding(.horizontal, inset)
-        .padding(.bottom, 16)
+        .padding(.bottom, 15)
         .stickerCard(cornerRadius: 12, shadowOffset: CGSize(width: 4, height: 5))
+        .padding(.bottom, 10)
     }
 }
+
+

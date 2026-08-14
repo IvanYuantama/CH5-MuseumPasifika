@@ -22,7 +22,7 @@ struct DetectionOverlayView: View {
                     .overlay(alignment: .topLeading) {
                         Text("\(object.label) \(Int(object.confidence * 100))%")
                             .font(.caption2.bold())
-                            .foregroundStyle(Color.warmWhite)
+                            .foregroundStyle(Color.white) // Ganti sesuai Color.warmWhite kamu
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(Color.brass, in: Capsule())
@@ -32,14 +32,36 @@ struct DetectionOverlayView: View {
         }
     }
 
-    /// Vision pakai koordinat normalized dengan origin KIRI-BAWAH,
-    /// SwiftUI pakai origin KIRI-ATAS -- makanya perlu flip Y.
     private func convert(_ boundingBox: CGRect, in size: CGSize) -> CGRect {
-        CGRect(
-            x: boundingBox.minX * size.width,
-            y: (1 - boundingBox.maxY) * size.height,
-            width: boundingBox.width * size.width,
-            height: boundingBox.height * size.height
+        let isLandscape = size.width > size.height
+        
+        // Asumsi resolusi kamera default adalah 16:9.
+        // Jika session kamu menggunakan preset .photo, ubah angka ini menjadi 4.0/3.0 dan 3.0/4.0
+        let imageAspectRatio: CGFloat = isLandscape ? (16.0 / 9.0) : (9.0 / 16.0)
+        let viewAspectRatio = size.width / size.height
+
+        var scaledWidth = size.width
+        var scaledHeight = size.height
+
+        // Simulasikan logika .resizeAspectFill
+        if viewAspectRatio > imageAspectRatio {
+            scaledWidth = size.width
+            scaledHeight = size.width / imageAspectRatio
+        } else {
+            scaledHeight = size.height
+            scaledWidth = size.height * imageAspectRatio
+        }
+
+        // Hitung area yang ter-crop (offset)
+        let xOffset = (scaledWidth - size.width) / 2.0
+        let yOffset = (scaledHeight - size.height) / 2.0
+
+        // Petakan koordinat (0...1) ke ukuran gambar yang sudah di-scale, lalu kurangi dengan offset
+        return CGRect(
+            x: (boundingBox.minX * scaledWidth) - xOffset,
+            y: (boundingBox.minY * scaledHeight) - yOffset,
+            width: boundingBox.width * scaledWidth,
+            height: boundingBox.height * scaledHeight
         )
     }
 }

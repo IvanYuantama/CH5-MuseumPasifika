@@ -19,23 +19,31 @@ struct PolaroidFrameView: View {
     private let cardWidth: CGFloat = 300
     private let cornerRadius: CGFloat = 6
     private let borderWidth: CGFloat = 16
-    private var photoSize: CGFloat { cardWidth - borderWidth * 2 }
+    private var photoWidth: CGFloat { cardWidth - borderWidth * 2 }
+
+    /// Tinggi foto mengikuti aspect ratio asli gambar hasil crop bounding box.
+    /// Dibatasi agar tidak terlalu pendek (min 0.5:1) atau terlalu tinggi (max 2:1).
+    private var photoHeight: CGFloat {
+        let ratio = image.size.height / max(image.size.width, 1)
+        let clampedRatio = min(max(ratio, 0.5), 2.0)
+        return photoWidth * clampedRatio
+    }
 
     private var developOpacity: Double {
         guard total > 0 else { return 0 }
         return Double(total - progress) / Double(total)
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             locationRow
                 .padding(.horizontal, borderWidth)
                 .padding(.top, 14)
                 .padding(.bottom, 10)
-            
+
             photo
                 .padding(.horizontal, borderWidth)
-            
+
             caption
                 .padding(.horizontal, borderWidth)
                 .padding(.top, 18)
@@ -47,7 +55,7 @@ struct PolaroidFrameView: View {
         .animation(.easeInOut(duration: 0.6), value: progress)
         .frame(maxWidth: .infinity)
     }
-    
+
     private var locationRow: some View {
         HStack(spacing: 5) {
             Image("placeicon")
@@ -63,18 +71,19 @@ struct PolaroidFrameView: View {
             Spacer()
         }
     }
-    
+
     private var photo: some View {
         ZStack {
             Image(uiImage: image)
                 .resizable()
                 .scaledToFill()
-                .frame(width: photoSize, height: photoSize)
+                .frame(width: photoWidth, height: photoHeight)
+                .clipped()
                 .clipShape(RoundedRectangle(cornerRadius: 2))
 
             RoundedRectangle(cornerRadius: 2)
                 .fill(Color.black)
-                .frame(width: photoSize, height: photoSize)
+                .frame(width: photoWidth, height: photoHeight)
                 .opacity(developOpacity)
         }
     }

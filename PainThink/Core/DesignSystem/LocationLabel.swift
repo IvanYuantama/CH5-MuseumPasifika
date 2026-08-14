@@ -18,12 +18,12 @@ struct LocationLabel: View {
                 .resizable()
                 .renderingMode(.template)
                 .scaledToFit()
-                .frame(width: size + 5, height: size + 5)
+                .frame(width: 6, height: 9)
                 .foregroundStyle(Color.color3)
 
             Text(place)
-                .font(.system(size: size, weight: .medium))
-                .foregroundStyle(.black.opacity(0.8))
+                .font(.system(size: size, weight: .light))
+                .foregroundStyle(.black)
                 .lineLimit(1)
         }
         .accessibilityElement(children: .combine)

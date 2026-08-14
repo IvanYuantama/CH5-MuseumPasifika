@@ -303,25 +303,27 @@ struct CameraView: View {
     }
 
     private func cropImage(_ image: UIImage, toRect boundingBox: CGRect) -> UIImage? {
-        guard let fixedImage = fixedOrientation(for: image),
-              let cgImage = fixedImage.cgImage else { return nil }
+            guard let fixedImage = fixedOrientation(for: image),
+                  let cgImage = fixedImage.cgImage else { return nil }
 
-        let imageWidth = fixedImage.size.width
-        let imageHeight = fixedImage.size.height
+            let imageWidth = fixedImage.size.width
+            let imageHeight = fixedImage.size.height
 
-        let x = boundingBox.origin.x * imageWidth
-        let width = boundingBox.width * imageWidth
-        let height = boundingBox.height * imageHeight
+            let x = boundingBox.origin.x * imageWidth
+            let width = boundingBox.width * imageWidth
+            let height = boundingBox.height * imageHeight
 
-        // Converts the Y coordinate from Vision (bottom-left) to CoreGraphics (top-left).
-        let y = (1 - boundingBox.origin.y - boundingBox.height) * imageHeight
+            // MARK: - Perbaikan Origin Y
+            // Karena kita langsung pakai output Core ML (origin Kiri-Atas),
+            // hapus kalkulasi (1 - y) ala Vision Framework.
+            let y = boundingBox.origin.y * imageHeight
 
-        let cropRect = CGRect(x: x, y: y, width: width, height: height)
+            let cropRect = CGRect(x: x, y: y, width: width, height: height)
 
-        guard let croppedCgImage = cgImage.cropping(to: cropRect) else { return image }
+            guard let croppedCgImage = cgImage.cropping(to: cropRect) else { return image }
 
-        return UIImage(cgImage: croppedCgImage, scale: fixedImage.scale, orientation: fixedImage.imageOrientation)
-    }
+            return UIImage(cgImage: croppedCgImage, scale: fixedImage.scale, orientation: fixedImage.imageOrientation)
+        }
 
     private func fixedOrientation(for image: UIImage) -> UIImage? {
         guard image.imageOrientation != .up else { return image }

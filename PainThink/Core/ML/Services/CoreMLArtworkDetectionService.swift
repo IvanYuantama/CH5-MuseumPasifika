@@ -5,247 +5,136 @@
 //  Created by Ivan Yuantama Pradipta on 06/08/26.
 //
 
+
 import UIKit
 import CoreVideo
-import OnnxRuntimeBindings
+import CoreML
+import CoreImage
 
 final class CoreMLArtworkDetectionService: ArtworkDetectionServicing {
-    
-    private var ortSession: ORTSession?
-    private var ortEnv: ORTEnv?
-    private let inputSize: CGFloat = 416
-    private let confidenceThreshold: Float = 0.25
-    private let iouThreshold: Float = 0.45
+
+    private var model: MLModel?
+    private let inputSize: CGFloat = 640
+    private let confidenceThreshold: Double = 0.25
+    private let iouThreshold: Double = 0.7
     private let paintingClassId: Int = 0
 
+    private let ciContext = CIContext()
+
     init() {
-        // 1. Load file 'yolo26.onnx' dari Bundle project
-        guard let modelPath = Bundle.main.path(forResource: "yolo26amadeus", ofType: "onnx") else {
-            print("❌ File yolo26.onnx tidak ditemukan di Bundle.")
+        guard let modelURL = Bundle.main.url(forResource: "yolov8test", withExtension: "mlmodelc") else {
+            print("File yolov8test.mlmodelc tidak ditemukan di Bundle.")
             return
         }
 
         do {
-            self.ortEnv = try ORTEnv(loggingLevel: .warning)
-            self.ortSession = try ORTSession(env: ortEnv!, modelPath: modelPath, sessionOptions: nil)
-            print("✅ ONNX Session berhasil diinisialisasi di Service.")
+            let configuration = MLModelConfiguration()
+            configuration.computeUnits = .all
+            self.model = try MLModel(contentsOf: modelURL, configuration: configuration)
+            print("Core ML model berhasil diinisialisasi di Service.")
         } catch {
-            print("❌ Gagal load model ONNX: \(error)")
+            print("Gagal load model Core ML: \(error)")
         }
     }
 
     func detect(in pixelBuffer: CVPixelBuffer, completion: @escaping ([DetectedObject]) -> Void) {
-        guard let session = ortSession else {
+        guard let model = model else {
             completion([])
             return
         }
 
-        // 2. Konversi CVPixelBuffer ke UIImage & sesuaikan rotasi kamera
         guard let uiImage = UIImage(pixelBuffer: pixelBuffer)?.rotate(radians: .pi / 2) else {
             completion([])
             return
         }
 
-        // 3. Resize ke 640x640 sesuai input model YOLO
-        guard let resizedImage = uiImage.resize(to: CGSize(width: inputSize, height: inputSize)) else {
-            completion([])
-            return
-        }
-
-        let pixelValues = resizedImage.toRGBFloatArray()
-        guard !pixelValues.isEmpty else {
+        guard let resizedImage = uiImage.resize(to: CGSize(width: inputSize, height: inputSize)),
+              let inputPixelBuffer = resizedImage.toCVPixelBuffer(size: CGSize(width: inputSize, height: inputSize)) else {
             completion([])
             return
         }
 
         do {
-            // 4. Siapkan Tensor Input
-            let inputData = NSMutableData(bytes: pixelValues, length: pixelValues.count * MemoryLayout<Float>.size)
-            let inputShape: [NSNumber] = [1, 3, NSNumber(value: Int(inputSize)), NSNumber(value: Int(inputSize))]
-            let inputTensor = try ORTValue(tensorData: inputData, elementType: .float, shape: inputShape)
+            let inputFeatures: [String: MLFeatureValue] = [
+                "image": MLFeatureValue(pixelBuffer: inputPixelBuffer),
+                "iouThreshold": MLFeatureValue(double: iouThreshold),
+                "confidenceThreshold": MLFeatureValue(double: confidenceThreshold)
+            ]
+            let provider = try MLDictionaryFeatureProvider(dictionary: inputFeatures)
 
-            let inputName = "images"
-            let outputName = "output0"
+            let output = try model.prediction(from: provider)
 
-            // 5. Jalankan Inference ONNX
-            let outputs = try session.run(
-                withInputs: [inputName: inputTensor],
-                outputNames: [outputName],
-                runOptions: nil
-            )
-
-            guard let outputValue = outputs[outputName] else {
+            guard let confidenceArray = output.featureValue(for: "confidence")?.multiArrayValue,
+                  let coordinatesArray = output.featureValue(for: "coordinates")?.multiArrayValue else {
                 completion([])
                 return
             }
 
-            let shapeInfo = try outputValue.tensorTypeAndShapeInfo()
-            let shape = shapeInfo.shape.map { $0.intValue }
-
-            let outputData = try outputValue.tensorData() as Data
-            let floatCount = outputData.count / MemoryLayout<Float>.size
-            let outputArray = outputData.withUnsafeBytes { rawBuffer -> [Float] in
-                Array(rawBuffer.bindMemory(to: Float.self).prefix(floatCount))
-            }
-
-            // 6. Parsing Output menggunakan Smart Parser (Otomatis & Presisi)
-            let detections = parseSmartYoloOutput(
-                outputArray,
-                shape: shape,
-                confidenceThreshold: confidenceThreshold,
-                inputSize: inputSize,
-                originalSize: uiImage.size
+            let detectedObjects = parseCoreMLOutput(
+                confidence: confidenceArray,
+                coordinates: coordinatesArray
             )
 
-            // 7. Mapping ke DetectedObject milik PainThink (Normalisasi 0.0 - 1.0)
-            let mappedObjects = detections.map { d -> DetectedObject in
-                let normRect = CGRect(
-                    x: d.boundingBox.origin.x / uiImage.size.width,
-                    y: d.boundingBox.origin.y / uiImage.size.height,
-                    width: d.boundingBox.width / uiImage.size.width,
-                    height: d.boundingBox.height / uiImage.size.height
-                )
-                
-                // Gunakan label "Painting" atau ID string sesuai preferensi aplikasi Anda
-                return DetectedObject(
-                    label: "Painting",
-                    confidence: d.confidence,
-                    boundingBox: normRect
-                )
-            }
-
-            completion(mappedObjects)
+            completion(detectedObjects)
 
         } catch {
-            print("❌ Error inference ONNX di service: \(error)")
+            print("Error inference Core ML di service: \(error)")
             completion([])
         }
     }
 
-    // MARK: - Smart YOLO Parser (Otomatis deteksi format output)
-    private func parseSmartYoloOutput(
-        _ data: [Float],
-        shape: [Int],
-        confidenceThreshold: Float,
-        inputSize: CGFloat,
-        originalSize: CGSize
-    ) -> [ObjectDetectionInternal] {
-        guard shape.count == 3 else {
-            print("⚠️ Shape output tidak valid: \(shape)")
+    // MARK: - Parsing Output Core ML (confidence + coordinates, NMS sudah dilakukan model)
+    private func parseCoreMLOutput(
+        confidence: MLMultiArray,
+        coordinates: MLMultiArray
+    ) -> [DetectedObject] {
+        let numBoxes = confidence.shape[0].intValue
+        let numClasses = confidence.shape[1].intValue
+
+        guard numBoxes > 0, coordinates.shape[0].intValue == numBoxes, coordinates.shape[1].intValue == 4 else {
             return []
         }
-        
-        let dim1 = shape[1]
-        let dim2 = shape[2]
-        
-        var rawDetections: [ObjectDetectionInternal] = []
-        let scaleX = originalSize.width / inputSize
-        let scaleY = originalSize.height / inputSize
 
-        // 1. Format End-to-End YOLO (Contoh: [1, 300, 6])
-        if dim1 > dim2 {
-            let numDetections = dim1
-            let attributes = dim2
-            
-            for i in 0..<numDetections {
-                let baseIndex = i * attributes
-                if baseIndex + 5 >= data.count { break }
-                
-                let confidence = data[baseIndex + 4]
-                let classId = Int(data[baseIndex + 5])
-                
-                guard confidence >= confidenceThreshold, classId == paintingClassId else { continue }
-                
-                let xmin = CGFloat(data[baseIndex + 0])
-                let ymin = CGFloat(data[baseIndex + 1])
-                let xmax = CGFloat(data[baseIndex + 2])
-                let ymax = CGFloat(data[baseIndex + 3])
-                
-                let box = CGRect(
-                    x: xmin * scaleX,
-                    y: ymin * scaleY,
-                    width: (xmax - xmin) * scaleX,
-                    height: (ymax - ymin) * scaleY
+        var results: [DetectedObject] = []
+
+        for boxIndex in 0..<numBoxes {
+            var bestClassId = 0
+            var bestScore: Float = 0
+
+            for classIndex in 0..<numClasses {
+                let score = confidence[[boxIndex, classIndex] as [NSNumber]].floatValue
+                if score > bestScore {
+                    bestScore = score
+                    bestClassId = classIndex
+                }
+            }
+
+            guard bestScore >= Float(confidenceThreshold), bestClassId == paintingClassId else { continue }
+
+            // MARK: Konversi coordinates -> CGRect
+            let cx = CGFloat(coordinates[[boxIndex, 0] as [NSNumber]].floatValue)
+            let cy = CGFloat(coordinates[[boxIndex, 1] as [NSNumber]].floatValue)
+            let w  = CGFloat(coordinates[[boxIndex, 2] as [NSNumber]].floatValue)
+            let h  = CGFloat(coordinates[[boxIndex, 3] as [NSNumber]].floatValue)
+
+            let normRect = CGRect(
+                x: cx - w / 2,
+                y: cy - h / 2,
+                width: w,
+                height: h
+            )
+
+            results.append(
+                DetectedObject(
+                    label: "Painting",
+                    confidence: bestScore,
+                    boundingBox: normRect
                 )
-                rawDetections.append(ObjectDetectionInternal(classId: classId, confidence: confidence, boundingBox: box))
-            }
-            return rawDetections // Format ini tidak butuh NMS
-            
-        } else {
-            // 2. Format Standar YOLOv8/v11 (Contoh: [1, 6, 8400] atau [1, 84, 8400])
-            let numAttributes = dim1
-            let numAnchors = dim2
-            let numClasses = numAttributes - 4
-            
-            for anchor in 0..<numAnchors {
-                var bestClassId = 0
-                var bestScore: Float = 0
-                
-                for c in 0..<numClasses {
-                    let score = data[(4 + c) * numAnchors + anchor]
-                    if score > bestScore {
-                        bestScore = score
-                        bestClassId = c
-                    }
-                }
-                
-                guard bestScore >= confidenceThreshold, bestClassId == paintingClassId else { continue }
-                
-                let cx = CGFloat(data[0 * numAnchors + anchor])
-                let cy = CGFloat(data[1 * numAnchors + anchor])
-                let w  = CGFloat(data[2 * numAnchors + anchor])
-                let h  = CGFloat(data[3 * numAnchors + anchor])
-                
-                let box = CGRect(
-                    x: (cx - w / 2) * scaleX,
-                    y: (cy - h / 2) * scaleY,
-                    width: w * scaleX,
-                    height: h * scaleY
-                )
-                rawDetections.append(ObjectDetectionInternal(classId: bestClassId, confidence: bestScore, boundingBox: box))
-            }
-            
-            return nonMaxSuppression(rawDetections, iouThreshold: iouThreshold)
+            )
         }
+
+        return results
     }
-
-    // MARK: - Helper NMS (Non-Max Suppression)
-    private func nonMaxSuppression(_ detections: [ObjectDetectionInternal], iouThreshold: Float) -> [ObjectDetectionInternal] {
-        let grouped = Dictionary(grouping: detections, by: { $0.classId })
-        var result: [ObjectDetectionInternal] = []
-
-        for (_, group) in grouped {
-            let sorted = group.sorted { $0.confidence > $1.confidence }
-            var kept: [ObjectDetectionInternal] = []
-
-            for candidate in sorted {
-                let overlapsExisting = kept.contains { existing in
-                    iou(candidate.boundingBox, existing.boundingBox) > iouThreshold
-                }
-                if !overlapsExisting {
-                    kept.append(candidate)
-                }
-            }
-            result.append(contentsOf: kept)
-        }
-        return result
-    }
-
-    private func iou(_ a: CGRect, _ b: CGRect) -> Float {
-        let intersection = a.intersection(b)
-        guard !intersection.isNull, intersection.width > 0, intersection.height > 0 else { return 0 }
-        let intersectionArea = intersection.width * intersection.height
-        let unionArea = (a.width * a.height) + (b.width * b.height) - intersectionArea
-        guard unionArea > 0 else { return 0 }
-        return Float(intersectionArea / unionArea)
-    }
-}
-
-// Struktur internal untuk parsing
-private struct ObjectDetectionInternal {
-    let classId: Int
-    let confidence: Float
-    let boundingBox: CGRect
 }
 
 // MARK: - Helper Ekstensi UIImage & CVPixelBuffer
@@ -265,40 +154,42 @@ extension UIImage {
         return newImage
     }
 
-    func toRGBFloatArray() -> [Float] {
-        guard let cgImage = self.cgImage else { return [] }
-        let width = cgImage.width
-        let height = cgImage.height
-        let pixelCount = width * height
+    func toCVPixelBuffer(size: CGSize) -> CVPixelBuffer? {
+        let attrs: [CFString: Any] = [
+            kCVPixelBufferCGImageCompatibilityKey: true,
+            kCVPixelBufferCGBitmapContextCompatibilityKey: true
+        ]
 
-        var rawBytes = [UInt8](repeating: 0, count: pixelCount * 4)
+        var pixelBufferOut: CVPixelBuffer?
+        let status = CVPixelBufferCreate(
+            kCFAllocatorDefault,
+            Int(size.width),
+            Int(size.height),
+            kCVPixelFormatType_32BGRA,
+            attrs as CFDictionary,
+            &pixelBufferOut
+        )
+
+        guard status == kCVReturnSuccess, let pixelBuffer = pixelBufferOut else { return nil }
+
+        CVPixelBufferLockBaseAddress(pixelBuffer, [])
+        defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, []) }
+
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         guard let context = CGContext(
-            data: &rawBytes,
-            width: width,
-            height: height,
+            data: CVPixelBufferGetBaseAddress(pixelBuffer),
+            width: Int(size.width),
+            height: Int(size.height),
             bitsPerComponent: 8,
-            bytesPerRow: width * 4,
+            bytesPerRow: CVPixelBufferGetBytesPerRow(pixelBuffer),
             space: colorSpace,
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else {
-            return []
+            bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+        ), let cgImage = self.cgImage else {
+            return nil
         }
 
-        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
-
-        var rChannel = [Float](repeating: 0, count: pixelCount)
-        var gChannel = [Float](repeating: 0, count: pixelCount)
-        var bChannel = [Float](repeating: 0, count: pixelCount)
-
-        for i in 0..<pixelCount {
-            let offset = i * 4
-            rChannel[i] = Float(rawBytes[offset]) / 255.0
-            gChannel[i] = Float(rawBytes[offset + 1]) / 255.0
-            bChannel[i] = Float(rawBytes[offset + 2]) / 255.0
-        }
-
-        return rChannel + gChannel + bChannel
+        context.draw(cgImage, in: CGRect(origin: .zero, size: size))
+        return pixelBuffer
     }
 
     func rotate(radians: CGFloat) -> UIImage? {
@@ -310,7 +201,7 @@ extension UIImage {
             height: self.size.height * cosValue + self.size.width * sinValue
         )
         let colorSpace = cgImage?.colorSpace ?? CGColorSpaceCreateDeviceRGB()
-        
+
         guard let context = CGContext(
             data: nil,
             width: Int(newSize.width),

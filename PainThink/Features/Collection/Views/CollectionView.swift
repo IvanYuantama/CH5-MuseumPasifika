@@ -31,7 +31,7 @@ struct CollectionView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     Text("Collection")
-                        .font(.system(size: 32, weight: .bold))
+                        .font(.system(size: 24, weight: .bold))
                         .foregroundStyle(.black)
 
                     section(title: "My collection", entries: myCollection)
@@ -49,11 +49,12 @@ struct CollectionView: View {
     }
 
     private func section(title: String, entries: [FeedEntry]) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 15) {
             HStack {
                 Text(title)
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 18, weight: .regular))
                     .foregroundStyle(.black)
+                    .padding(.leading, 16)
 
                 Spacer()
 
@@ -70,7 +71,8 @@ struct CollectionView: View {
                     .buttonStyle(.plain)
                 }
             }
-        }
+        }.padding(.bottom, 20)
+            .padding(.top, 16)
     }
 
     private func card(_ entry: FeedEntry) -> some View {
@@ -85,18 +87,18 @@ struct CollectionView: View {
             .padding(.bottom, 10)
 
             Text(entry.painting.title)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: 11, weight: .regular))
                 .foregroundStyle(.black)
                 .lineLimit(1)
 
             Text(entry.painting.artist)
-                .font(.system(size: 13))
-                .foregroundStyle(.black.opacity(0.45))
+                .font(.system(size: 11, weight: .thin))
+                .foregroundStyle(.black)
                 .lineLimit(1)
 
             Text(entry.painting.year)
-                .font(.system(size: 13))
-                .foregroundStyle(.black.opacity(0.45))
+                .font(.system(size: 10, weight: .light))
+                .foregroundStyle(.black)
 
             // UI kit gives the caption zone breathing room below the year.
             Color.clear.frame(height: 40)
@@ -108,3 +110,4 @@ struct CollectionView: View {
         .stickerCard(cornerRadius: 12, shadowOffset: CGSize(width: 4, height: 5))
     }
 }
+

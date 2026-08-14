@@ -35,30 +35,36 @@ struct ExpoView: View {
                     }
                 }
                 .padding(.horizontal, pageInset)
-                .padding(.top, 8)
-                // Clears the floating tab bar that will sit over this feed.
                 .padding(.bottom, 120)
             }
-            .background(Color.color1.ignoresSafeArea())
+            .background(Color.color1)
+            .padding(.bottom, 21)
+            .padding(.top, 24)
+            .ignoresSafeArea()
+            .statusBarHidden(true)
+
             .navigationDestination(for: FeedEntry.self) { entry in
-                PaintingDetailView(painting: entry.painting, opinions: entry.opinions)
+                PaintingDetailView(
+                    painting: entry.painting,
+                    opinions: entry.opinions
+                )
             }
         }
     }
-
+    
     private var header: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 6) {
             Circle()
                 .fill(.black.opacity(0.1))
-                .frame(width: 38, height: 38)
+                .frame(width: 25, height: 25)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text("Wilgo1xx")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.black.opacity(0.85))
+                    .font(.system(size: 10, weight: .light))
+                    .foregroundStyle(.black)
                 Text("Maestro")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.black.opacity(0.45))
+                    .font(.system(size: 8, weight: .light))
+                    .foregroundStyle(.black)
             }
 
             Spacer()
