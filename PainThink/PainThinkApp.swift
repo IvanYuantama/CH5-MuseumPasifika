@@ -15,6 +15,7 @@ struct PainThinkApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                .statusBarHidden(true)
         }
         .modelContainer(for: PolaroidRecord.self)
     }

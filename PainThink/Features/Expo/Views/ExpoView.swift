@@ -38,8 +38,8 @@ struct ExpoView: View {
                 .padding(.bottom, 120)
             }
             .background(Color.color1)
-            .padding(.bottom, 21)
-            .padding(.top, 24)
+            .padding(.bottom, 18)
+            .padding(.top, 22)
             .ignoresSafeArea()
             .statusBarHidden(true)
 
@@ -60,10 +60,10 @@ struct ExpoView: View {
 
             VStack(alignment: .leading, spacing: 1) {
                 Text("Wilgo1xx")
-                    .font(.system(size: 10, weight: .light))
+                    .font(.system(size: 14, weight: .light))
                     .foregroundStyle(.black)
                 Text("Maestro")
-                    .font(.system(size: 8, weight: .light))
+                    .font(.system(size: 11, weight: .light))
                     .foregroundStyle(.black)
             }
 

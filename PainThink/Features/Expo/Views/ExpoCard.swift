@@ -36,15 +36,18 @@ struct ExpoCard: View {
             .aspectRatio(entry.aspectRatio, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: 3))
             .padding(.top, 11)
+            .padding(.horizontal, 20)
 
             if let headline = insights.headline {
                 Text("\(headline.percentage)% of people say \(headline.statement)")
-                    .font(.system(size: 11, weight: .regular))
+                    .font(.system(size: 14, weight: .regular, design: .rounded))
+                    .tracking(0.14)
                     .foregroundStyle(.black)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity)
                     .padding(.top, 10)
+                    .padding(.horizontal, 20)
             }
 
             if !insights.colorFeelings.isEmpty {
@@ -52,6 +55,7 @@ struct ExpoCard: View {
                     .font(.system(size: 11, weight: .regular))
                     .foregroundStyle(.black)
                     .padding(.top, 10)
+                    .padding(.horizontal, 20)
 
                 HStack(spacing: 3) {
                     ForEach(insights.colorFeelings) { feeling in
@@ -62,6 +66,7 @@ struct ExpoCard: View {
                     }
                 }
                 .padding(.top, 3)
+                .padding(.horizontal, 20)
             }
         }
         .padding(.horizontal, inset)
@@ -70,5 +75,3 @@ struct ExpoCard: View {
         .padding(.bottom, 10)
     }
 }
-
-
