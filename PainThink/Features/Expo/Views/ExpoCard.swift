@@ -55,6 +55,7 @@ struct ExpoCard: View {
                 // Artwork
                 PaintingImageView(
                     assetName: entry.painting.assetName,
+                    imageURLString: entry.painting.imageURLString,
                     fallbackColors: insights.colorFeelings.map(\.color)
                 )
                 .scaledToFill()

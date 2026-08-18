@@ -9,20 +9,26 @@ import Observation
 
 @Observable
 final class PolaroidDevelopViewModel {
+    private static let confidenceThreshold = 0.7
+
     let image: UIImage
     let activities: [Activity]
     var answers: [UUID: String] = [:]
     var detectedLabel: String?
     var isDetecting = false
 
-    // Placeholder painting info until the backend can return real metadata per detection.
-    let paintingTitle = "Girl With Pearl Earring"
-    let artistName = "Johannes Vermeer"
-    let year = "1665"
-    let location = "Mauritshuis, Netherlands"
+    var paintingTitle = "Detecting…"
+    var artistName = ""
+    var year = ""
+    var location = "Unknown Location"
     let captureDate: String
 
+    // Set once classification + backend lookup finish, real or fallback.
+    // Feeds PaintingDetailView once the user asks to see what others thought.
+    private(set) var resolvedPainting: Painting?
+
     private var record: PolaroidRecord?
+    private let classifier = PaintingClassifierService()
 
     init(image: UIImage) {
         self.image = image
@@ -42,24 +48,68 @@ final class PolaroidDevelopViewModel {
 
         let data = image.jpegData(compressionQuality: 0.85) ?? Data()
         let newRecord = PolaroidRecord(imageData: data, totalActivities: activities.count)
-        newRecord.paintingTitle = paintingTitle
-        newRecord.artistName = artistName
-        newRecord.location = location
         context.insert(newRecord)
         record = newRecord
 
         isDetecting = true
-        do {
-            let result = try await APIClient.shared.detectPaint(image: image)
-            newRecord.confidence = result.confidence
-            if result.detected {
-                detectedLabel = "Painting detected"
-                newRecord.detectedLabel = detectedLabel
-            }
-        } catch {
-            // Best-effort: detection failure shouldn't block the activities.
-        }
+        await resolvePainting(into: newRecord)
         isDetecting = false
+    }
+
+    private func resolvePainting(into record: PolaroidRecord) async {
+        do {
+            let (label, confidence) = try await classifier.classify(image)
+            detectedLabel = label
+            record.detectedLabel = label
+            record.confidence = confidence
+
+            guard confidence >= Self.confidenceThreshold else {
+                applyFallback(into: record)
+                return
+            }
+
+            let dto = try await APIClient.shared.fetchPainting(byTitle: label)
+            apply(dto, into: record)
+        } catch {
+            // Classifier failure, or no matching painting on the backend yet.
+            applyFallback(into: record)
+        }
+    }
+
+    private func apply(_ dto: PaintingDTO, into record: PolaroidRecord) {
+        paintingTitle = dto.title
+        artistName = dto.artist
+        year = dto.year
+
+        record.paintingTitle = dto.title
+        record.artistName = dto.artist
+        record.location = location
+
+        resolvedPainting = Painting(
+            title: dto.title,
+            artist: dto.artist,
+            year: dto.year,
+            museum: location,
+            imageURLString: dto.image
+        )
+    }
+
+    private func applyFallback(into record: PolaroidRecord) {
+        paintingTitle = "Untitled"
+        artistName = "Unknown Artist"
+        year = "Undated"
+        location = "Unknown Location"
+
+        record.paintingTitle = paintingTitle
+        record.artistName = artistName
+        record.location = location
+
+        resolvedPainting = Painting(
+            title: paintingTitle,
+            artist: artistName,
+            year: year,
+            museum: location
+        )
     }
 
     func select(_ moodLabel: String, for activity: Activity) {

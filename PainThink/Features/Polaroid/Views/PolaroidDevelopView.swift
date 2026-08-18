@@ -29,6 +29,12 @@ struct PolaroidDevelopView: View {
                     year: viewModel.year,
                     location: viewModel.location,
                     captureDate: viewModel.captureDate,
+                    painting: viewModel.resolvedPainting ?? Painting(
+                        title: viewModel.paintingTitle,
+                        artist: viewModel.artistName,
+                        year: viewModel.year,
+                        museum: viewModel.location
+                    ),
                     onGoToCamera: onGoToCamera,
                     onGoToCollection: onGoToCollection
                 )

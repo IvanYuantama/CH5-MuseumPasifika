@@ -14,6 +14,7 @@ struct Painting: Identifiable, Hashable {
     let year: String
     let museum: String
     let assetName: String?
+    let imageURLString: String?
     let likeCount: Int
 
     init(
@@ -23,6 +24,7 @@ struct Painting: Identifiable, Hashable {
         year: String,
         museum: String,
         assetName: String? = nil,
+        imageURLString: String? = nil,
         likeCount: Int = 0
     ) {
         self.id = id
@@ -31,6 +33,7 @@ struct Painting: Identifiable, Hashable {
         self.year = year
         self.museum = museum
         self.assetName = assetName
+        self.imageURLString = imageURLString
         self.likeCount = likeCount
     }
 }

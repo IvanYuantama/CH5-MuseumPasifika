@@ -6,6 +6,6 @@
 //
 
 enum Endpoint {
-    static let baseURL = "http://127.0.0.1:8000"
-    static let detectPaint = "\(baseURL)/api/detect-paint"
+    static let baseURL = "https://discoverably-unlatticed-marylynn.ngrok-free.dev"
+    static let paintingSearch = "\(baseURL)/api/v1/paintings/search"
 }

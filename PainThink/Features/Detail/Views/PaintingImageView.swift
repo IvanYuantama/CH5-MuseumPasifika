@@ -10,6 +10,7 @@ import SwiftUI
 // screen's real data, so an empty slot still says something about the painting.
 struct PaintingImageView: View {
     let assetName: String?
+    var imageURLString: String? = nil
     let fallbackColors: [Color]
 
     private var artwork: Image? {
@@ -17,18 +18,37 @@ struct PaintingImageView: View {
         return Image(assetName)
     }
 
+    private var remoteURL: URL? {
+        guard let imageURLString else { return nil }
+        return URL(string: imageURLString)
+    }
+
     var body: some View {
         if let artwork {
             artwork
                 .resizable()
                 .scaledToFill()
+        } else if let remoteURL {
+            AsyncImage(url: remoteURL) { phase in
+                if let image = phase.image {
+                    image
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    fallbackGradient
+                }
+            }
         } else {
-            LinearGradient(
-                colors: gradientColors,
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            fallbackGradient
         }
+    }
+
+    private var fallbackGradient: some View {
+        LinearGradient(
+            colors: gradientColors,
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 
     private var gradientColors: [Color] {

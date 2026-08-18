@@ -18,6 +18,7 @@ struct PaintingHeroCard: View {
         VStack(alignment: .leading, spacing: 0) {
             PaintingImageView(
                 assetName: painting.assetName,
+                imageURLString: painting.imageURLString,
                 fallbackColors: paletteColors
             )
             .frame(maxWidth: .infinity)

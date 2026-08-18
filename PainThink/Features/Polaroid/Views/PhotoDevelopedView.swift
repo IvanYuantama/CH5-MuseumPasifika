@@ -16,6 +16,7 @@ struct PhotoDevelopedView: View {
     let year: String
     let location: String
     let captureDate: String
+    let painting: Painting
     let onGoToCamera: () -> Void
     let onGoToCollection: () -> Void
     
@@ -67,13 +68,13 @@ struct PhotoDevelopedView: View {
         }
     }
 
-    // Until detection returns real painting identity, the opinions screen is
-    // fed by the same sample painting the develop flow hardcodes.
+    // Opinions aren't served by the backend yet, so the detail screen opens
+    // with the real, on-device-resolved painting but no crowd opinions.
     private var seeOpinionsButton: some View {
         NavigationLink(
             value: FeedEntry(
-                painting: SamplePaintings.girlWithPearlEarring,
-                opinions: SamplePaintings.pearlEarringOpinions
+                painting: painting,
+                opinions: []
             )
         ) {
             Text("See what other saw")

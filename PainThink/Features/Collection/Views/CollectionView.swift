@@ -182,6 +182,7 @@ struct CollectionCardView: View {
         VStack(alignment: .leading, spacing: 3) {
             PaintingImageView(
                 assetName: entry.painting.assetName,
+                imageURLString: entry.painting.imageURLString,
                 fallbackColors: PaintingInsights(opinions: entry.opinions).colorFeelings.map(\.color)
             )
             .frame(maxWidth: .infinity, maxHeight: 128)
