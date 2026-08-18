@@ -11,11 +11,11 @@ struct ActivityCardView: View {
     let onSelect: (String) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .center, spacing: 16) {
             ZStack(alignment: .bottomTrailing) {
                 Text(activity.prompt)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(.black.opacity(0.8))
+                    .font(.system(size: 14, weight: .regular, design: .rounded))
+                    .foregroundStyle(.black)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.leading, 16)
                     .padding(.trailing, selectedLabel != nil ? 32 : 16)

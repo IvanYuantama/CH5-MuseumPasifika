@@ -15,7 +15,7 @@ struct ConsensusCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("\(headline.percentage)%")
-                .font(.system(size: 64, weight: .bold, design: .rounded))
+                .font(.system(size: 64, weight: .bold))
                 .foregroundStyle(.black)
                 .contentTransition(.numericText())
 
@@ -25,22 +25,17 @@ struct ConsensusCard: View {
                 .padding(.top, 4)
 
             Text("of people say \(headline.statement)")
-                .font(.system(size: 17, weight: .medium))
-                .foregroundStyle(.black.opacity(0.75))
+                .font(.system(size: 14, weight: .regular))
+                .foregroundStyle(.black.opacity(0.6))
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 16)
-
-            Text("based on \(total) opinions")
-                .font(.system(size: 12))
-                .foregroundStyle(.black.opacity(0.38))
-                .padding(.top, 8)
+                .padding(.top, 10)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(20)
-        .stickerCard(cornerRadius: 14, shadowOffset: CGSize(width: 4, height: 5))
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
-            "\(headline.percentage) percent of people say \(headline.statement), based on \(total) opinions"
+            "\(headline.percentage) percent of people say \(headline.statement)"
         )
+        .padding(.top, 25)
+        .padding(.bottom, 35)
     }
 }

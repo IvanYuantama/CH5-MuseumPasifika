@@ -25,30 +25,36 @@ struct DragDropMoodPickerView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Spacer()
-                dropTargetLabel
-                    .background(
-                        GeometryReader { geo in
-                            Color.clear
-                                .onAppear { dropTargetFrame = geo.frame(in: .named("dragSpace")) }
-                                .onChange(of: geo.frame(in: .named("dragSpace"))) { _, newValue in
-                                    dropTargetFrame = newValue
-                                }
-                        }
-                    )
-                Spacer()
-            }
+            // 1. Ubah alignment VStack menjadi .center (atau hapus parameternya karena center adalah default)
+            VStack(alignment: .center, spacing: 16) {
+                HStack {
+                    Spacer()
+                    dropTargetLabel
+                        .background(
+                            GeometryReader { geo in
+                                Color.clear
+                                    .onAppear { dropTargetFrame = geo.frame(in: .named("dragSpace")) }
+                                    .onChange(of: geo.frame(in: .named("dragSpace"))) { _, newValue in
+                                        dropTargetFrame = newValue
+                                    }
+                            }
+                        )
+                    Spacer()
+                }
 
-            FlowLayout(spacing: 8, lineSpacing: 8) {
-                ForEach(availableOptions, id: \.self) { option in
-                    chip(option)
+                // 2. Bungkus FlowLayout dengan HStack dan apit menggunakan Spacer()
+                HStack {
+                    Spacer()
+                    FlowLayout(spacing: 8, lineSpacing: 8) {
+                        ForEach(availableOptions, id: \.self) { option in
+                            chip(option)
+                        }
+                    }
+                    Spacer()
                 }
             }
+            .coordinateSpace(name: "dragSpace")
         }
-        .coordinateSpace(name: "dragSpace")
-    }
 
     // The hole always renders behind whatever's inset in it, so it naturally
     // shrinks to the empty placeholder size or grows to fit the dropped card.

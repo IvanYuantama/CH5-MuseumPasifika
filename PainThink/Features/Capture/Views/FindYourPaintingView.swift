@@ -20,13 +20,13 @@ struct FindYourPaintingView: View {
                 // Headline
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Find your\npainting.")
-                        .font(.system(size: 48, weight: .bold))
+                        .font(.system(size: 50, weight: .bold, design: .rounded))
                         .foregroundStyle(.black)
                         .lineSpacing(2)
                         .fixedSize(horizontal: false, vertical: true)
 
                     Text("Any one in this room. The one that keeps\nyou standing there a second too long.")
-                        .font(.system(size: 15, weight: .regular))
+                        .font(.system(size: 14, weight: .regular, design: .rounded))
                         .foregroundStyle(.black.opacity(0.5))
                         .lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)

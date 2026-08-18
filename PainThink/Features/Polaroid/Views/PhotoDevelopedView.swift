@@ -38,18 +38,15 @@ struct PhotoDevelopedView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Your photo has been developed!")
-                            .font(.system(size: 22, weight: .bold))
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
                             .foregroundStyle(.black)
                             .fixedSize(horizontal: false, vertical: true)
 
-                        Text("Added to your collection!")
-                            .font(.system(size: 14))
-                            .foregroundStyle(.black.opacity(0.65))
-
                         // CTAs: see opinions (navigates within the stack) and
                         // go to collection (pops back to the collection screen).
-                        VStack(spacing: 10) {
+                        HStack {
                             seeOpinionsButton
+                            Spacer()
                         }
                         .padding(.top, 12)
                     }
@@ -79,14 +76,14 @@ struct PhotoDevelopedView: View {
                 opinions: SamplePaintings.pearlEarringOpinions
             )
         ) {
-            Text("See others opinion")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(.black.opacity(0.85))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 13)
+            Text("See what other saw")
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundStyle(.black)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
         }
         .buttonStyle(.plain)
-        .stickerCard(cornerRadius: 12, fill: Color.color3)
+        .stickerCard(cornerRadius: 8, shadowOffset: CGSize(width: 2, height: 3), fill: Color.color3)
     }
 
     

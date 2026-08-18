@@ -8,6 +8,16 @@ import Foundation
 // Synthetic feed for previews and the temporary expo screen. Nothing in the
 // shipping path reads this -- replace with the real query once paintings and
 // opinions are served.
+
+
+// Test no entry
+//enum SampleFeed {
+//    static let entries: [FeedEntry] = []
+//    
+//    // ...
+//}
+
+// Test with entry
 enum SampleFeed {
     static let entries: [FeedEntry] = [
         entry(

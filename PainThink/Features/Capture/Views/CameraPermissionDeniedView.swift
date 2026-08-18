@@ -38,14 +38,14 @@ struct CameraPermissionDeniedView: View {
 
                     // Headline
                     Text("The camera is\nturned off.")
-                        .font(.system(size: 36, weight: .bold))
+                        .font(.system(size: 30, weight: .bold, design: .rounded))
                         .foregroundStyle(.black)
                         .lineSpacing(2)
                         .fixedSize(horizontal: false, vertical: true)
 
                     // Subtitle
                     Text("The questions come from your own shot.\nNo photo, nothing to develop.")
-                        .font(.system(size: 15, weight: .regular))
+                        .font(.system(size: 14, weight: .regular, design: .rounded))
                         .foregroundStyle(.black.opacity(0.5))
                         .lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)

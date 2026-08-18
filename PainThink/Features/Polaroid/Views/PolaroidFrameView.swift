@@ -16,18 +16,28 @@ struct PolaroidFrameView: View {
     let progress: Int
     let total: Int
     
-    private let cardWidth: CGFloat = 300
-    private let cornerRadius: CGFloat = 6
-    private let borderWidth: CGFloat = 16
+    private let cardWidth: CGFloat = 280
+    private let cornerRadius: CGFloat = 8
+    private let borderWidth: CGFloat = 14
     private var photoWidth: CGFloat { cardWidth - borderWidth * 2 }
 
     /// Tinggi foto mengikuti aspect ratio asli gambar hasil crop bounding box.
     /// Dibatasi agar tidak terlalu pendek (min 0.5:1) atau terlalu tinggi (max 2:1).
-    private var photoHeight: CGFloat {
-        let ratio = image.size.height / max(image.size.width, 1)
-        let clampedRatio = min(max(ratio, 0.5), 2.0)
-        return photoWidth * clampedRatio
-    }
+//    private var photoHeight: CGFloat {
+//        let ratio = image.size.height / max(image.size.width, 1)
+//        let clampedRatio = min(max(ratio, 0.5), 2.0)
+//        return photoWidth * clampedRatio
+//    }
+    
+    private let maxPhotoHeight: CGFloat = 233 // Batas aman agar kartu tidak menutupi seluruh layar
+
+        private var photoHeight: CGFloat {
+            let ratio = image.size.height / max(image.size.width, 1)
+            let calculatedHeight = photoWidth * ratio
+            
+            // Membatasi tinggi: minimal sama dengan lebarnya (1:1), maksimal sesuai maxPhotoHeight
+            return min(max(calculatedHeight, photoWidth), maxPhotoHeight)
+        }
 
     private var developOpacity: Double {
         guard total > 0 else { return 0 }
@@ -36,23 +46,37 @@ struct PolaroidFrameView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+
             locationRow
                 .padding(.horizontal, borderWidth)
                 .padding(.top, 14)
-                .padding(.bottom, 10)
+                .padding(.bottom, 29)
 
             photo
                 .padding(.horizontal, borderWidth)
 
             caption
                 .padding(.horizontal, borderWidth)
-                .padding(.top, 18)
-                .padding(.bottom, 24)
+                .padding(.top, 14)
+                .padding(.bottom, 20)
         }
         .frame(width: cardWidth)
-        .stickerCard(cornerRadius: cornerRadius, shadowOffset: CGSize(width: 5, height: 6))
-        .animation(.spring(response: 0.6, dampingFraction: 0.7), value: isUnlocked)
-        .animation(.easeInOut(duration: 0.6), value: progress)
+        .background(
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .fill(Color.white)
+        )
+        .stickerCard(
+            cornerRadius: cornerRadius,
+            shadowOffset: CGSize(width: 4, height: 6)
+        )
+        .animation(
+            .spring(response: 0.6, dampingFraction: 0.7),
+            value: isUnlocked
+        )
+        .animation(
+            .easeInOut(duration: 0.6),
+            value: progress
+        )
         .frame(maxWidth: .infinity)
     }
 
@@ -63,12 +87,19 @@ struct PolaroidFrameView: View {
                 .renderingMode(.template)
                 .foregroundStyle(Color.color3)
                 .scaledToFit()
-                .frame(width: 16, height: 16)
+                .frame(width: 14, height: 14)
+
             Text(location)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.black.opacity(0.8))
+                .font(.system(size: 12, weight: .regular, design: .rounded))
+                .foregroundStyle(.black)
                 .lineLimit(1)
+            
             Spacer()
+            
+            // Short horizontal line on the right
+            Rectangle()
+                .fill(Color.gray.opacity(0.8))
+                .frame(width: 16, height: 2.5)
         }
     }
 
@@ -89,20 +120,26 @@ struct PolaroidFrameView: View {
     }
     
     private var caption: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(size: 14, weight: .regular, design: .rounded))
                 .foregroundStyle(.black)
                 .lineLimit(1)
             
-            Text("\(artist) · \(year)")
-                .font(.museumCaption(.footnote))
-                .foregroundStyle(.black.opacity(0.65))
+            Text(artist)
+                .font(.system(size: 12, weight: .regular, design: .rounded))
+                .foregroundStyle(.black)
                 .lineLimit(1)
+
+            Text(year)
+                .font(.system(size: 10, weight: .regular, design: .rounded))
+                .foregroundStyle(.black)
+
+            Color.clear.frame(height: 35)
             
             Text(captureDate)
-                .font(.museumCaption(.caption2))
-                .foregroundStyle(.black.opacity(0.5))
+                .font(.system(size: 12, weight: .light, design: .rounded))
+                .foregroundStyle(.black.opacity(0.8))
         }
     }
 }

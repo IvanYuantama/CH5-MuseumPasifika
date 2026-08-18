@@ -10,7 +10,8 @@ import SwiftUI
 // Favorites, two uniform cards each.
 struct CollectionView: View {
     let onCameraTap: () -> Void
-    private let gutter: CGFloat = 14
+    private let horizontalSpacing: CGFloat = 26
+    private let verticalSpacing: CGFloat = 32
     private let pageInset: CGFloat = 20
 
     // All 6 sample entries used as dummy gallery items.
@@ -21,51 +22,64 @@ struct CollectionView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .bottomTrailing) {
+            VStack(spacing: 0) {
                 if hasItems {
                     filledContent
                 } else {
                     emptyContent
                 }
 
-                // Floating camera button — always visible.
-                cameraFAB
-                    .padding(.trailing, 24)
-                    .padding(.bottom, 40)
+                // Dedicated bottom area for the camera button so cards NEVER scroll behind it.
+                HStack {
+                    Spacer()
+                    cameraFAB
+                        .padding(.trailing, 24)
+                        .padding(.top, 20)
+                        .padding(.bottom, 40)
+                }
+                .background(Color.color1)
             }
+            .background(Color.color1.ignoresSafeArea())
         }
     }
 
     // MARK: - Content states
 
     private var filledContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                Text("Gallery")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
-                    .foregroundStyle(.black)
-                
-                Text("My Gallery")
-                    .font(.system(size: 18, weight: .regular, design: .rounded))
-                    .foregroundStyle(.black)
-                    .padding(.leading, 20)
+        VStack(alignment: .leading, spacing: 0) {
+            // FIXED HEADER
+            Text("Gallery")
+                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .foregroundStyle(.black)
+                .padding(.horizontal, pageInset)
+                .padding(.top, 8)
 
-                // 2-column grid
+            Text("My Gallery")
+                .font(.system(size: 18, weight: .regular, design: .rounded))
+                .foregroundStyle(.black)
+                .padding(.leading, pageInset + 20)
+                .padding(.top, 24)
+                .padding(.bottom, 20)
+
+            // ONLY THIS PART SCROLLS
+            ScrollView {
                 LazyVGrid(
-                    columns: [GridItem(.flexible(), spacing: gutter), GridItem(.flexible(), spacing: gutter)],
-                    spacing: gutter
+                    columns: [
+                        GridItem(.flexible(), spacing: horizontalSpacing),
+                        GridItem(.flexible(), spacing: horizontalSpacing)
+                    ],
+                    spacing: verticalSpacing
                 ) {
                     ForEach(myCollection) { entry in
                         CollectionCardView(entry: entry)
                     }
                 }
+                .padding(.horizontal, pageInset)
+                .padding(.bottom, 20)
             }
-            .padding(.horizontal, pageInset)
-            .padding(.top, 8)
-            // Extra bottom padding so the last card clears the FAB (64pt) +
-            // its own padding (40) + safe area buffer = 120pt total.
-            .padding(.bottom, 120)
+            .background(Color.color1)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color.color1.ignoresSafeArea())
         .navigationDestination(for: FeedEntry.self) { entry in
             PaintingDetailView(
@@ -77,6 +91,7 @@ struct CollectionView: View {
         }
     }
 
+    
     private var emptyContent: some View {
         ZStack(alignment: .topLeading) {
             Color.color1.ignoresSafeArea()
@@ -88,29 +103,32 @@ struct CollectionView: View {
                     .padding(.horizontal, pageInset)
                     .padding(.top, 8)
 
-                Spacer()
+                    .padding(.bottom,85)
 
                 VStack(alignment: .leading, spacing: 14) {
                     // Icon
                     ZStack {
                         Circle()
                             .fill(Color.color3)
-                            .frame(width: 64, height: 64)
+                            .frame(width: 60, height: 60)
 
-                        Image(systemName: "photo.on.rectangle")
-                            .font(.system(size: 26, weight: .medium))
+                        Image("Collection")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 33, height: 36)
                             .foregroundStyle(.white)
+
                     }
 
                     Text("No painting have\nbeen captured.")
-                        .font(.system(size: 28, weight: .semibold))
-                        .foregroundStyle(.black.opacity(0.45))
+                        .font(.system(size: 28, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.black.opacity(0.5))
                         .lineSpacing(2)
                         .fixedSize(horizontal: false, vertical: true)
 
                     Text("Try to capture a painting and let it sits on\nyour gallery.")
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundStyle(.black.opacity(0.4))
+                        .font(.system(size: 14, weight: .regular, design: .rounded))
+                        .foregroundStyle(.black.opacity(0.5))
                         .lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -159,15 +177,14 @@ struct CollectionCardView: View {
         }
     }
 
-    // MARK: - Front View (Same as original)
+    // MARK: - Front View
     private var frontView: some View {
         VStack(alignment: .leading, spacing: 3) {
             PaintingImageView(
                 assetName: entry.painting.assetName,
                 fallbackColors: PaintingInsights(opinions: entry.opinions).colorFeelings.map(\.color)
             )
-            .frame(maxWidth: .infinity)
-            .aspectRatio(0.82, contentMode: .fit)
+            .frame(maxWidth: .infinity, maxHeight: 128)
             .clipShape(RoundedRectangle(cornerRadius: 4))
             .padding(.bottom, 10)
 
@@ -184,54 +201,89 @@ struct CollectionCardView: View {
             Text(entry.painting.year)
                 .font(.system(size: 10, weight: .light))
                 .foregroundStyle(.black)
-
-            Color.clear.frame(height: 40)
+                .padding(.bottom, 52)
         }
         .padding(.horizontal, 12)
-        .padding(.top, 20)
+        .padding(.top, 12)
         .padding(.bottom, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white)
-        .stickerCard(cornerRadius: 12, shadowOffset: CGSize(width: 4, height: 5))
+        .frame(width: 150, height: 250, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.white)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .stickerCard(
+            cornerRadius: 10,
+            shadowOffset: CGSize(width: 4, height: 5)
+        )
+
     }
 
     // MARK: - Back View
+
     private var backView: some View {
+
         VStack(alignment: .leading, spacing: 14) {
+
             Text(shortTitle(for: entry.painting.title))
                 .font(.system(size: 24, weight: .bold))
                 .foregroundStyle(.black)
 
             let insight = PaintingInsights(opinions: entry.opinions)
             let circleColor = insight.colorFeelings.first?.color ?? Color.color3
+
             Circle()
                 .fill(circleColor)
                 .frame(width: 24, height: 24)
 
             VStack(alignment: .leading, spacing: 6) {
+
                 Text(insight.moods.first?.label ?? "Warm")
-                    .font(.system(size: 16, weight: .regular))
+                    .font(
+                        .system(
+                            size: 18,
+                            weight: .regular,
+                            design: .rounded
+                        )
+                    )
                     .foregroundStyle(.black)
-                
+
                 Text("Feel Safe")
-                    .font(.system(size: 16, weight: .regular))
+                    .font(
+                        .system(
+                            size: 18,
+                            weight: .regular,
+                            design: .rounded
+                        )
+                    )
                     .foregroundStyle(.black)
                     .padding(.bottom, 2)
                     .overlay(alignment: .bottom) {
-                        Rectangle().fill(Color.color3).frame(height: 2)
+                        Rectangle()
+                            .fill(Color.color3)
+                            .frame(height: 2)
                     }
             }
 
             Spacer(minLength: 20)
 
             HStack {
+
                 NavigationLink(value: entry) {
                     Text("Details")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(
+                            .system(
+                                size: 18,
+                                weight: .bold,
+                                design: .rounded
+                            )
+                        )
                         .foregroundStyle(.black)
                         .padding(.bottom, 2)
                         .overlay(alignment: .bottom) {
-                            Rectangle().fill(Color.color3).frame(height: 2)
+                            Rectangle()
+                                .fill(Color.color3)
+                                .frame(height: 2)
                         }
                 }
                 .buttonStyle(.plain)
@@ -243,9 +295,14 @@ struct CollectionCardView: View {
                         Circle()
                             .fill(Color.color3)
                             .frame(width: 42, height: 42)
-                        
+
                         Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(
+                                .system(
+                                    size: 18,
+                                    weight: .semibold
+                                )
+                            )
                             .foregroundStyle(.white)
                             .offset(y: -1)
                     }
@@ -253,11 +310,24 @@ struct CollectionCardView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color.white)
-        .stickerCard(cornerRadius: 12, shadowOffset: CGSize(width: 4, height: 5))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .frame(
+            width: 150,
+            height: 250,
+            alignment: .topLeading
+        )
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.white)
+        )
+        .clipShape(
+            RoundedRectangle(cornerRadius: 24)
+        )
+        .stickerCard(
+            cornerRadius: 24,
+            shadowOffset: CGSize(width: 4, height: 5)
+        )
     }
 
     private func shortTitle(for title: String) -> String {
