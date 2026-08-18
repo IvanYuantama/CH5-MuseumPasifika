@@ -9,73 +9,158 @@ import SwiftUI
 // wired in. Sections and picks mirror the handed-off design: My collection and
 // Favorites, two uniform cards each.
 struct CollectionView: View {
+    let onCameraTap: () -> Void
     private let gutter: CGFloat = 14
     private let pageInset: CGFloat = 20
 
-    private var myCollection: [FeedEntry] {
-        picks(titles: ["Girl With Pearl Earring", "The Scream"])
-    }
+    // All 6 sample entries used as dummy gallery items.
+    private var myCollection: [FeedEntry] { SampleFeed.entries }
 
-    private var favorites: [FeedEntry] {
-        picks(titles: ["The Starry Night", "Mona Lisa"])
-    }
-
-    private func picks(titles: [String]) -> [FeedEntry] {
-        titles.compactMap { title in
-            SampleFeed.entries.first { $0.painting.title == title }
-        }
-    }
+    // Toggle to false to see the empty state during development.
+    private var hasItems: Bool { !myCollection.isEmpty }
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    Text("Collection")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundStyle(.black)
-
-                    section(title: "My collection", entries: myCollection)
-                    section(title: "Favorites", entries: favorites)
+            ZStack(alignment: .bottomTrailing) {
+                if hasItems {
+                    filledContent
+                } else {
+                    emptyContent
                 }
-                .padding(.horizontal, pageInset)
-                .padding(.top, 8)
-                .padding(.bottom, 120)
-            }
-            .background(Color.color1.ignoresSafeArea())
-            .navigationDestination(for: FeedEntry.self) { entry in
-                PaintingDetailView(painting: entry.painting, opinions: entry.opinions)
+
+                // Floating camera button — always visible.
+                cameraFAB
+                    .padding(.trailing, 24)
+                    .padding(.bottom, 40)
             }
         }
     }
 
-    private func section(title: String, entries: [FeedEntry]) -> some View {
-        VStack(alignment: .leading, spacing: 15) {
-            HStack {
-                Text(title)
-                    .font(.system(size: 18, weight: .regular))
+    // MARK: - Content states
+
+    private var filledContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                Text("Gallery")
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
                     .foregroundStyle(.black)
-                    .padding(.leading, 16)
+                
+                Text("My Gallery")
+                    .font(.system(size: 18, weight: .regular, design: .rounded))
+                    .foregroundStyle(.black)
+                    .padding(.leading, 20)
+
+                // 2-column grid
+                LazyVGrid(
+                    columns: [GridItem(.flexible(), spacing: gutter), GridItem(.flexible(), spacing: gutter)],
+                    spacing: gutter
+                ) {
+                    ForEach(myCollection) { entry in
+                        CollectionCardView(entry: entry)
+                    }
+                }
+            }
+            .padding(.horizontal, pageInset)
+            .padding(.top, 8)
+            // Extra bottom padding so the last card clears the FAB (64pt) +
+            // its own padding (40) + safe area buffer = 120pt total.
+            .padding(.bottom, 120)
+        }
+        .background(Color.color1.ignoresSafeArea())
+        .navigationDestination(for: FeedEntry.self) { entry in
+            PaintingDetailView(
+                painting: entry.painting,
+                opinions: entry.opinions,
+                onGoToCollection: { /* already in collection, no-op */ },
+                onGoToCamera: onCameraTap
+            )
+        }
+    }
+
+    private var emptyContent: some View {
+        ZStack(alignment: .topLeading) {
+            Color.color1.ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Gallery")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundStyle(.black)
+                    .padding(.horizontal, pageInset)
+                    .padding(.top, 8)
 
                 Spacer()
 
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.black.opacity(0.35))
-            }
+                VStack(alignment: .leading, spacing: 14) {
+                    // Icon
+                    ZStack {
+                        Circle()
+                            .fill(Color.color3)
+                            .frame(width: 64, height: 64)
 
-            HStack(alignment: .top, spacing: gutter) {
-                ForEach(entries) { entry in
-                    NavigationLink(value: entry) {
-                        card(entry)
+                        Image(systemName: "photo.on.rectangle")
+                            .font(.system(size: 26, weight: .medium))
+                            .foregroundStyle(.white)
                     }
-                    .buttonStyle(.plain)
+
+                    Text("No painting have\nbeen captured.")
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundStyle(.black.opacity(0.45))
+                        .lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("Try to capture a painting and let it sits on\nyour gallery.")
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundStyle(.black.opacity(0.4))
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .padding(.horizontal, pageInset)
+
+                Spacer()
+                Spacer()
             }
-        }.padding(.bottom, 20)
-            .padding(.top, 16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
     }
 
-    private func card(_ entry: FeedEntry) -> some View {
+    private var cameraFAB: some View {
+        Button(action: onCameraTap) {
+            Image("newcamera")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 64, height: 64)
+                .shadow(color: .black.opacity(0.18), radius: 6, x: 0, y: 3)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Scan a painting")
+    }
+
+
+
+}
+
+struct CollectionCardView: View {
+    let entry: FeedEntry
+    @State private var isFlipped = false
+
+    var body: some View {
+        ZStack {
+            frontView
+                .opacity(isFlipped ? 0 : 1)
+            
+            backView
+                .opacity(isFlipped ? 1 : 0)
+                .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
+        }
+        .rotation3DEffect(.degrees(isFlipped ? 180 : 0), axis: (x: 0, y: 1, z: 0))
+        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: isFlipped)
+        .onTapGesture {
+            isFlipped.toggle()
+        }
+    }
+
+    // MARK: - Front View (Same as original)
+    private var frontView: some View {
         VStack(alignment: .leading, spacing: 3) {
             PaintingImageView(
                 assetName: entry.painting.assetName,
@@ -100,14 +185,100 @@ struct CollectionView: View {
                 .font(.system(size: 10, weight: .light))
                 .foregroundStyle(.black)
 
-            // UI kit gives the caption zone breathing room below the year.
             Color.clear.frame(height: 40)
         }
         .padding(.horizontal, 12)
         .padding(.top, 20)
         .padding(.bottom, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white)
         .stickerCard(cornerRadius: 12, shadowOffset: CGSize(width: 4, height: 5))
+    }
+
+    // MARK: - Back View
+    private var backView: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(shortTitle(for: entry.painting.title))
+                .font(.system(size: 24, weight: .bold))
+                .foregroundStyle(.black)
+
+            let insight = PaintingInsights(opinions: entry.opinions)
+            let circleColor = insight.colorFeelings.first?.color ?? Color.color3
+            Circle()
+                .fill(circleColor)
+                .frame(width: 24, height: 24)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(insight.moods.first?.label ?? "Warm")
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundStyle(.black)
+                
+                Text("Feel Safe")
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundStyle(.black)
+                    .padding(.bottom, 2)
+                    .overlay(alignment: .bottom) {
+                        Rectangle().fill(Color.color3).frame(height: 2)
+                    }
+            }
+
+            Spacer(minLength: 20)
+
+            HStack {
+                NavigationLink(value: entry) {
+                    Text("Details")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.black)
+                        .padding(.bottom, 2)
+                        .overlay(alignment: .bottom) {
+                            Rectangle().fill(Color.color3).frame(height: 2)
+                        }
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+
+                Button(action: sharePolaroid) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.color3)
+                            .frame(width: 42, height: 42)
+                        
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .offset(y: -1)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Color.white)
+        .stickerCard(cornerRadius: 12, shadowOffset: CGSize(width: 4, height: 5))
+    }
+
+    private func shortTitle(for title: String) -> String {
+        if title == "Girl With Pearl Earring" { return "A Pearl" }
+        let words = title.split(separator: " ")
+        return String(words.prefix(2).joined(separator: " "))
+    }
+
+    // Creates an image of the front of the polaroid card for sharing
+    @MainActor
+    private func sharePolaroid() {
+        let renderer = ImageRenderer(content: frontView.frame(width: 300))
+        renderer.scale = UIScreen.main.scale
+        
+        if let image = renderer.uiImage {
+            let activityVC = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let rootVC = windowScene.windows.first?.rootViewController {
+                rootVC.present(activityVC, animated: true)
+            }
+        }
     }
 }
 

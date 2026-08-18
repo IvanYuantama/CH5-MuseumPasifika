@@ -10,11 +10,13 @@ struct PolaroidDevelopView: View {
     @State private var viewModel: PolaroidDevelopViewModel
     @State private var currentPage = 0
     @Environment(\.modelContext) private var modelContext
-    let onDismiss: () -> Void
+    let onGoToCollection: () -> Void
+    let onGoToCamera: () -> Void
 
-    init(image: UIImage, onDismiss: @escaping () -> Void) {
+    init(image: UIImage, onGoToCollection: @escaping () -> Void, onGoToCamera: @escaping () -> Void) {
         _viewModel = State(initialValue: PolaroidDevelopViewModel(image: image))
-        self.onDismiss = onDismiss
+        self.onGoToCollection = onGoToCollection
+        self.onGoToCamera = onGoToCamera
     }
 
     var body: some View {
@@ -27,7 +29,8 @@ struct PolaroidDevelopView: View {
                     year: viewModel.year,
                     location: viewModel.location,
                     captureDate: viewModel.captureDate,
-                    onBackToHome: onDismiss
+                    onGoToCamera: onGoToCamera,
+                    onGoToCollection: onGoToCollection
                 )
             } else {
                 developContent

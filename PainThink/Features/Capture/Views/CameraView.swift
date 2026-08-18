@@ -1,124 +1,104 @@
 import SwiftUI
 
-// Instant-camera styled capture screen: the viewfinder sits in a card on warm
-// paper, with an exposure ruler, timer presets, and a shutter knob below it.
-// Adapts between portrait and landscape, so the old portrait lock is gone.
+// Redesigned capture screen: full-bleed viewfinder fills top portion,
+// corner-bracket overlay in yellow, circular shutter button below,
+// small polaroid stack thumbnail at bottom left.
 struct CameraView: View {
     @State private var cameraManager = CameraManager(detectionService: CoreMLArtworkDetectionService())
     @Binding var capturedImage: UIImage?
-    @Environment(\.dismiss) private var dismiss
+    var onGoToCollection: (() -> Void)? = nil
+
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     @State private var isCapturing = false
     @State private var showShutterFlash = false
-    @State private var exposure: Double = 0
-    @State private var timerSeconds: Int?
     @State private var countdown: Int?
-    @State private var knobRotation: Double = 0
-    @State private var lastKnobAngle: Double?
-
-    private let knobSize: CGFloat = 96
-    private let knobMaxRotation: Double = 270
-    private let zoomRange: ClosedRange<Double> = 1...5
-
-    private var zoomFactor: Double {
-        zoomRange.lowerBound + knobRotation / knobMaxRotation * (zoomRange.upperBound - zoomRange.lowerBound)
-    }
 
     private var isLandscape: Bool { verticalSizeClass == .compact }
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack {
             Color.color1.ignoresSafeArea()
 
             if cameraManager.permissionDenied {
-                permissionDeniedView
+                CameraPermissionDeniedView(onNotNow: { onGoToCollection?() })
             } else if isLandscape {
                 landscapeLayout
             } else {
                 portraitLayout
             }
-
-            closeButton
         }
         .onAppear { cameraManager.configure() }
         .onDisappear { cameraManager.stopSession() }
-        .onChange(of: exposure) { _, newValue in
-            cameraManager.setExposureBias(Float(newValue))
-        }
     }
 
     // MARK: - Layouts
 
     private var portraitLayout: some View {
         VStack(spacing: 0) {
-            previewCard
+            // Viewfinder — fills width with horizontal padding
+            viewfinderCard
                 .padding(.horizontal, 24)
                 .padding(.top, 52)
 
-            infoLabels
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 28)
-                .padding(.top, 12)
-
-            ExposureRuler(value: $exposure)
-                .frame(width: 224)
-                .padding(.top, 30)
-
             Spacer()
 
-            shutterKnob
-                .frame(maxWidth: .infinity)
-                .overlay(alignment: .leading) {
-                    timerColumn.padding(.leading, 64)
+            // Bottom controls: polaroid stub + shutter ring
+            ZStack {
+                // Left aligned polaroid stub
+                HStack {
+                    polaroidStub
+                        .padding(.leading, 40)
+                    Spacer()
                 }
-                .padding(.bottom, 44)
+                
+                // Perfectly centered shutter ring
+                shutterButton
+                    .frame(width: 96, height: 96)
+                    .shadow(color: .black.opacity(0.15), radius: 2, x: 2, y: 3)
+            }
+            .padding(.bottom, 52)
         }
     }
 
     private var landscapeLayout: some View {
-        HStack(spacing: 28) {
-            previewCard
-                .padding(.leading, 34)
-                .padding(.vertical, 18)
+        HStack(spacing: 24) {
+            viewfinderCard
+                .padding(.leading, 24)
+                .padding(.vertical, 20)
 
-            VStack(alignment: .leading, spacing: 0) {
-                infoLabels
-                    .padding(.top, 14)
-
+            VStack {
                 Spacer()
-
-                shutterKnob
-                    .frame(maxWidth: .infinity)
-                    .overlay(alignment: .trailing) {
-                        timerColumn
-                    }
-
+                shutterButton
+                    .frame(width: 80, height: 80)
                 Spacer()
-
-                ExposureRuler(value: $exposure)
-                    .frame(width: 190)
-                    .padding(.bottom, 14)
             }
             .padding(.trailing, 36)
         }
     }
 
-    // MARK: - Viewfinder
+    // MARK: - Viewfinder with corner brackets
 
-    private var previewCard: some View {
+    private var viewfinderCard: some View {
         ZStack {
-            if cameraManager.isSessionRunning {
-                CameraPreviewView(session: cameraManager.session)
-            } else {
-                // Simulator, or the session still warming up.
-                Color.black
+            // Camera feed or black placeholder
+            Group {
+                if cameraManager.isSessionRunning {
+                    CameraPreviewView(session: cameraManager.session)
+                } else {
+                    Color.black
+                }
             }
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(10)
 
+            // Detection overlay
             if cameraManager.isLiveDetectionEnabled {
                 DetectionOverlayView(objects: cameraManager.detectedObjects)
+                    .padding(10)
             }
 
+            // Countdown
             if let countdown {
                 Text("\(countdown)")
                     .font(.system(size: 64, weight: .bold, design: .rounded))
@@ -126,153 +106,105 @@ struct CameraView: View {
                     .contentTransition(.numericText(countsDown: true))
             }
 
+            // Shutter flash
             Color.white
                 .opacity(showShutterFlash ? 0.8 : 0)
                 .allowsHitTesting(false)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .padding(10)
+
+            // Corner brackets drawn on top
+            CornerBracketsView()
         }
-        .aspectRatio(isLandscape ? 1.5 : 1.0, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .aspectRatio(0.85, contentMode: .fit)
         .animation(.easeInOut(duration: 0.2), value: countdown)
     }
 
-    private var infoLabels: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("Exposure : \(String(format: "%.1f", exposure))")
-            Text("Timer : \(timerSeconds.map { "\($0) s" } ?? "off")")
-            Text("Zoom : \(String(format: "%.1f", zoomFactor))x")
-        }
-        .font(.system(size: 11))
-        .foregroundStyle(.black.opacity(0.55))
-    }
+    // MARK: - Shutter button (ring style)
 
-    // MARK: - Controls
+    @State private var shutterRotation: Double = 0
 
-    private var timerColumn: some View {
-        VStack(spacing: 16) {
-            timerButton(3)
-            timerButton(5)
-        }
-    }
+    private var shutterButton: some View {
+        ZStack {
+            // Inner white circle (Shutter)
+            Circle()
+                .fill(Color.white)
+                .frame(width: 58, height: 58)
+                .onTapGesture(perform: shutterTapped)
+                .accessibilityLabel("Shutter — tap to capture")
 
-    private func timerButton(_ seconds: Int) -> some View {
-        let isSelected = timerSeconds == seconds
-        return Button {
-            timerSeconds = isSelected ? nil : seconds
-        } label: {
-            Text("\(seconds)s")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.black.opacity(0.75))
-                .frame(width: 42, height: 42)
-                .background(
-                    Circle().fill(
-                        isSelected
-                            ? Color(red: 0.72, green: 0.71, blue: 0.70)
-                            : Color(red: 0.89, green: 0.88, blue: 0.87)
-                    )
-                )
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(seconds) second timer")
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
+            // Outer ring (yellow with 4 tick marks) acting as zoom knob
+            ZStack {
+                Circle()
+                    .stroke(Color.color3, lineWidth: 8)
+                    .frame(width: 76, height: 76)
 
-    // Tap fires the shutter; dragging in a circle rotates the dial and maps
-    // 0...270 degrees onto 1x...5x zoom.
-    private var shutterKnob: some View {
-        Image("Puter")
-            .resizable()
-            .scaledToFit()
-            .frame(width: knobSize, height: knobSize)
-            .rotationEffect(.degrees(knobRotation))
-            .scaleEffect(isCapturing ? 0.94 : 1)
-            .contentShape(Circle())
-            .gesture(knobRotateGesture)
-            .onTapGesture(perform: shutterTapped)
-            .animation(.easeOut(duration: 0.15), value: isCapturing)
-            .accessibilityLabel("Shutter")
-            .accessibilityHint("Tap to capture. Drag in a circle to zoom.")
-    }
-
-    private var knobRotateGesture: some Gesture {
-        DragGesture(minimumDistance: 8)
-            .onChanged { value in
-                let center = knobSize / 2
-                let angle = atan2(value.location.y - center, value.location.x - center) * 180 / .pi
-                if let last = lastKnobAngle {
-                    var delta = angle - last
-                    if delta > 180 { delta -= 360 }
-                    if delta < -180 { delta += 360 }
-                    knobRotation = min(knobMaxRotation, max(0, knobRotation + delta))
-                    cameraManager.setZoom(Float(zoomFactor))
+                // 4 tick marks around the ring
+                ForEach(0..<4) { i in
+                    let angle = Double(i) / 4.0 * .pi * 2
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.7))
+                        .frame(width: 2, height: 8)
+                        .offset(y: -34) // radius - half tick height
+                        .rotationEffect(.radians(angle))
                 }
-                lastKnobAngle = angle
             }
-            .onEnded { _ in lastKnobAngle = nil }
-    }
-
-    private var closeButton: some View {
-        Button { dismiss() } label: {
-            Image(systemName: "xmark")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.black.opacity(0.55))
-                .padding(10)
-                .background(Color.black.opacity(0.06), in: Circle())
+            .rotationEffect(.degrees(shutterRotation))
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        let center = CGPoint(x: 40, y: 40)
+                        let vector = CGVector(dx: value.location.x - center.x, dy: value.location.y - center.y)
+                        let angle = atan2(vector.dy, vector.dx)
+                        var degrees = angle * 180 / .pi
+                        if degrees < 0 { degrees += 360 }
+                        shutterRotation = degrees
+                        
+                        // Convert rotation to zoom (e.g., 0 to 360 -> 1x to 5x)
+                        let zoomFactor = Float(1 + (degrees / 360) * 4)
+                        cameraManager.setZoom(zoomFactor)
+                    }
+            )
         }
-        .buttonStyle(.plain)
-        .padding(.leading, 16)
-        .padding(.top, 8)
-        .accessibilityLabel("Close camera")
+        .frame(width: 80, height: 80)
+        .scaleEffect(isCapturing ? 0.92 : 1)
+        .animation(.easeOut(duration: 0.12), value: isCapturing)
     }
 
-    private var permissionDeniedView: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "camera.fill").font(.system(size: 32)).foregroundStyle(Color.brass)
-            Text("Camera access needed").font(.headline).foregroundStyle(.black)
-            Text("Open Settings to allow camera access.")
-                .font(.subheadline)
-                .foregroundStyle(.black.opacity(0.6))
-                .multilineTextAlignment(.center)
-            Button("Open Settings") {
-                if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(Color.brass)
+    // MARK: - Polaroid stub (bottom left)
+
+    private var polaroidStub: some View {
+        ZStack {
+            // Shadow card behind
+            Rectangle()
+                .fill(Color.gray.opacity(0.3))
+                .frame(width: 32, height: 42)
+                .rotationEffect(.degrees(25))
+                .offset(x: 10, y: 5)
+
+            // Front polaroid
+            Rectangle()
+                .fill(Color.color3)
+                .frame(width: 32, height: 42)
         }
-        .padding(32)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityHidden(true)
+        .onTapGesture {
+            onGoToCollection?()
+        }
     }
 
-    // MARK: - Capture
+    // MARK: - Capture logic
 
     private func shutterTapped() {
         guard !isCapturing, countdown == nil else { return }
-        if let timerSeconds {
-            startCountdown(from: timerSeconds)
-        } else {
-            captureAndSmartCrop()
-        }
+        captureAndSmartCrop()
     }
 
-    private func startCountdown(from seconds: Int) {
-        countdown = seconds
-        Task {
-            for remaining in stride(from: seconds, through: 1, by: -1) {
-                withAnimation { countdown = remaining }
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-            }
-            countdown = nil
-            captureAndSmartCrop()
-        }
-    }
-
-    // Manual capture + smart crop: grabs the freshest bounding box at shutter
-    // time and crops the photo to it; falls back to the full frame.
     private func captureAndSmartCrop() {
         guard !isCapturing else { return }
         isCapturing = true
 
         let currentBoundingBox = cameraManager.detectedObjects.first?.boundingBox
-
         triggerShutterEffect()
 
         cameraManager.capturePhoto { image in
@@ -299,118 +231,80 @@ struct CameraView: View {
     private func finishCapture(with finalImage: UIImage?) {
         withAnimation(.easeIn(duration: 0.2)) { showShutterFlash = false }
         capturedImage = finalImage
-        dismiss()
+        // RootView observes capturedImage via onChange and drives the transition.
     }
 
     private func cropImage(_ image: UIImage, toRect boundingBox: CGRect) -> UIImage? {
-            guard let fixedImage = fixedOrientation(for: image),
-                  let cgImage = fixedImage.cgImage else { return nil }
+        guard let fixedImage = fixedOrientation(for: image),
+              let cgImage = fixedImage.cgImage else { return nil }
 
-            let imageWidth = fixedImage.size.width
-            let imageHeight = fixedImage.size.height
+        let imageWidth = fixedImage.size.width
+        let imageHeight = fixedImage.size.height
 
-            let x = boundingBox.origin.x * imageWidth
-            let width = boundingBox.width * imageWidth
-            let height = boundingBox.height * imageHeight
+        let x = boundingBox.origin.x * imageWidth
+        let width = boundingBox.width * imageWidth
+        let height = boundingBox.height * imageHeight
+        let y = boundingBox.origin.y * imageHeight
 
-            // MARK: - Perbaikan Origin Y
-            // Karena kita langsung pakai output Core ML (origin Kiri-Atas),
-            // hapus kalkulasi (1 - y) ala Vision Framework.
-            let y = boundingBox.origin.y * imageHeight
-
-            let cropRect = CGRect(x: x, y: y, width: width, height: height)
-
-            guard let croppedCgImage = cgImage.cropping(to: cropRect) else { return image }
-
-            return UIImage(cgImage: croppedCgImage, scale: fixedImage.scale, orientation: fixedImage.imageOrientation)
-        }
+        let cropRect = CGRect(x: x, y: y, width: width, height: height)
+        guard let croppedCgImage = cgImage.cropping(to: cropRect) else { return image }
+        return UIImage(cgImage: croppedCgImage, scale: fixedImage.scale, orientation: fixedImage.imageOrientation)
+    }
 
     private func fixedOrientation(for image: UIImage) -> UIImage? {
         guard image.imageOrientation != .up else { return image }
-
         UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
         image.draw(in: CGRect(origin: .zero, size: image.size))
-        let normalizedImage = UIGraphicsGetImageFromCurrentImageContext()
+        let normalized = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
-
-        return normalizedImage
+        return normalized
     }
 }
 
-// Ruler-style exposure slider: ticks from -2 to +2, a black handle, draggable
-// across the whole strip. Writes EV directly to the binding.
-private struct ExposureRuler: View {
-    @Binding var value: Double
+// MARK: - Corner Brackets overlay
 
-    private let range: ClosedRange<Double> = -2...2
-    private let tickStep: Double = 0.25
+private struct CornerBracketsView: View {
+    private let length: CGFloat = 40
+    private let thickness: CGFloat = 6
+    private let inset: CGFloat = 0
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("- +")
-                .font(.system(size: 9))
-                .foregroundStyle(.black.opacity(0.4))
+        GeometryReader { geo in
+            let w = geo.size.width
+            let h = geo.size.height
 
-            GeometryReader { geo in
-                let width = geo.size.width
-
-                ZStack(alignment: .leading) {
-                    Rectangle()
-                        .fill(.black.opacity(0.35))
-                        .frame(height: 1)
-                        .frame(maxHeight: .infinity, alignment: .center)
-
-                    ForEach(ticks, id: \.self) { tick in
-                        let isMajor = tick.truncatingRemainder(dividingBy: 1) == 0
-                        Rectangle()
-                            .fill(.black.opacity(isMajor ? 0.5 : 0.3))
-                            .frame(width: 1, height: isMajor ? 14 : 8)
-                            .frame(maxHeight: .infinity, alignment: .center)
-                            .offset(x: position(of: tick, in: width))
-                    }
-
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(.black)
-                        .frame(width: 5, height: 18)
-                        .offset(x: position(of: value, in: width) - 2)
-                }
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { drag in
-                            let raw = range.lowerBound
-                                + (drag.location.x / width) * (range.upperBound - range.lowerBound)
-                            let snapped = (raw * 10).rounded() / 10
-                            value = min(range.upperBound, max(range.lowerBound, snapped))
-                        }
-                )
-            }
-            .frame(height: 20)
-
-            HStack {
-                Text("-2"); Spacer(); Text("-1"); Spacer(); Text("0"); Spacer(); Text("+1"); Spacer(); Text("+2")
-            }
-            .font(.system(size: 9))
-            .foregroundStyle(.black.opacity(0.5))
-        }
-        .accessibilityElement()
-        .accessibilityLabel("Exposure")
-        .accessibilityValue(String(format: "%.1f", value))
-        .accessibilityAdjustableAction { direction in
-            switch direction {
-            case .increment: value = min(range.upperBound, value + 0.1)
-            case .decrement: value = max(range.lowerBound, value - 0.1)
-            @unknown default: break
+            ZStack {
+                // Top Left
+                bracket(at: CGPoint(x: inset, y: inset), rotation: 0)
+                // Top Right
+                bracket(at: CGPoint(x: w - length - inset, y: inset), rotation: 90)
+                // Bottom Right
+                bracket(at: CGPoint(x: w - length - inset, y: h - length - inset), rotation: 180)
+                // Bottom Left
+                bracket(at: CGPoint(x: inset, y: h - length - inset), rotation: 270)
             }
         }
     }
 
-    private var ticks: [Double] {
-        Array(stride(from: range.lowerBound, through: range.upperBound, by: tickStep))
+    private func bracket(at point: CGPoint, rotation: Double) -> some View {
+        BracketShape(length: length, thickness: thickness)
+            .fill(Color.color3)
+            .frame(width: length, height: length)
+            .rotationEffect(.degrees(rotation))
+            .position(x: point.x + length / 2, y: point.y + length / 2)
     }
+}
 
-    private func position(of tick: Double, in width: CGFloat) -> CGFloat {
-        let fraction = (tick - range.lowerBound) / (range.upperBound - range.lowerBound)
-        return CGFloat(fraction) * width
+private struct BracketShape: Shape {
+    let length: CGFloat
+    let thickness: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        // Vertical arm
+        path.addRect(CGRect(x: 0, y: 0, width: thickness, height: length))
+        // Horizontal arm
+        path.addRect(CGRect(x: 0, y: 0, width: length, height: thickness))
+        return path
     }
 }

@@ -5,63 +5,100 @@
 
 import SwiftUI
 
-// Hosts the four tabs and floats the bar over them. Camera is deliberately not a
-// tab: it sits in the middle of the bar for balance but opens the capture sheet,
-// matching the flow the app already had before the bar existed.
+// Linear navigation flow:
+//   FindYourPainting (once) → CameraView → PolaroidDevelopView → PhotoDevelopedView → CollectionView → CameraView
 struct RootView: View {
-    // Wraps the photo so it can drive `fullScreenCover(item:)` without making
-    // UIKit's UIImage Identifiable app-wide.
-    private struct Capture: Identifiable {
-        let id = UUID()
-        let image: UIImage
+
+    enum Screen: Equatable {
+        case welcome
+        case camera
+        case develop(UIImage)
+        case collection
+
+        static func == (lhs: Screen, rhs: Screen) -> Bool {
+            switch (lhs, rhs) {
+            case (.welcome, .welcome), (.camera, .camera), (.collection, .collection): return true
+            case (.develop, .develop): return true
+            default: return false
+            }
+        }
     }
 
-    @State private var selection: AppTab = .expo
-    @State private var isShowingCamera = false
+    @State private var screen: Screen = .welcome
     @State private var pendingImage: UIImage?
-    @State private var capture: Capture?
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack {
             Color.color1.ignoresSafeArea()
-
-            content
-
-            PainThinkTabBar(selection: $selection) {
-                isShowingCamera = true
-            }
-            .padding(.bottom, 8)
+            contentView
         }
-        .sheet(isPresented: $isShowingCamera, onDismiss: promoteCapture) {
-            CameraView(capturedImage: $pendingImage)
-                .ignoresSafeArea()
-        }
-        .fullScreenCover(item: $capture) { capture in
-            PolaroidDevelopView(image: capture.image) {
-                self.capture = nil
-            }
-        }
-    }
-
-    // The camera sheet has to finish dismissing before the develop screen can
-    // take over; presenting both at once drops the second presentation.
-    private func promoteCapture() {
-        guard let pendingImage else { return }
-        capture = Capture(image: pendingImage)
-        self.pendingImage = nil
+        .animation(.easeInOut(duration: 0.35), value: screenKey)
     }
 
     @ViewBuilder
-    private var content: some View {
-        switch selection {
-        case .expo:
-            ExpoView(entries: SampleFeed.entries)
+    private var contentView: some View {
+        switch screen {
+        case .welcome:
+            FindYourPaintingView {
+                withAnimation(.easeInOut(duration: 0.4)) {
+                    screen = .camera
+                }
+            }
+            .transition(.opacity)
+
+        case .camera:
+            CameraView(capturedImage: $pendingImage) {
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    screen = .collection
+                }
+            }
+            .ignoresSafeArea()
+                .onChange(of: pendingImage) { _, newImage in
+                    guard let img = newImage else { return }
+                    pendingImage = nil
+                    withAnimation(.easeInOut(duration: 0.35)) {
+                        screen = .develop(img)
+                    }
+                }
+
+        case .develop(let image):
+            PolaroidDevelopView(
+                image: image,
+                onGoToCollection: {
+                    withAnimation(.easeInOut(duration: 0.35)) {
+                        screen = .collection
+                    }
+                },
+                onGoToCamera: {
+                    withAnimation(.easeInOut(duration: 0.35)) {
+                        screen = .camera
+                    }
+                }
+            )
+            .transition(.asymmetric(
+                insertion: .move(edge: .trailing),
+                removal: .move(edge: .leading)
+            ))
+
         case .collection:
-            CollectionView()
-        case .search:
-            SearchView(entries: SampleFeed.entries)
-        case .profile:
-            ProfileView()
+            CollectionView(onCameraTap: {
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    screen = .camera
+                }
+            })
+            .transition(.asymmetric(
+                insertion: .move(edge: .trailing),
+                removal: .move(edge: .leading)
+            ))
+        }
+    }
+
+    private var screenKey: String {
+        switch screen {
+        case .welcome:    return "welcome"
+        case .camera:     return "camera"
+        case .develop:    return "develop"
+        case .collection: return "collection"
         }
     }
 }

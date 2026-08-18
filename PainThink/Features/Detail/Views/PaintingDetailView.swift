@@ -10,6 +10,7 @@ import SwiftUI
 //
 // Reads top to bottom as artwork -> verdict -> breakdown -> individuals, so the
 // screen answers "what is this" before "what do people think" before "who".
+
 struct PaintingDetailView: View {
     let painting: Painting
     let opinions: [VisitorOpinion]
@@ -18,11 +19,20 @@ struct PaintingDetailView: View {
 
     private let insights: PaintingInsights
     private let pageInset: CGFloat = 20
+    let onGoToCollection: () -> Void
+    let onGoToCamera: () -> Void
 
-    init(painting: Painting, opinions: [VisitorOpinion]) {
+    init(
+        painting: Painting,
+        opinions: [VisitorOpinion],
+        onGoToCollection: @escaping () -> Void = {},
+        onGoToCamera: @escaping () -> Void = {}
+    ) {
         self.painting = painting
         self.opinions = opinions
         self.insights = PaintingInsights(opinions: opinions)
+        self.onGoToCollection = onGoToCollection
+        self.onGoToCamera = onGoToCamera
     }
 
     var body: some View {
@@ -38,18 +48,21 @@ struct PaintingDetailView: View {
                     ConsensusCard(headline: headline, total: insights.total)
                 }
 
-                if !insights.moods.isEmpty {
-                    MoodDistributionCard(moods: insights.moods)
-                }
+//                if !insights.moods.isEmpty {
+//                    MoodDistributionCard(moods: insights.moods)
+//                }
 
                 if !insights.colorFeelings.isEmpty {
                     ColorFeelingsCard(feelings: insights.colorFeelings)
                 }
 
-                if !opinions.isEmpty {
-                    VisitorOpinionStrip(opinions: opinions, pageInset: pageInset)
-                        .padding(.top, 4)
-                }
+//                if !opinions.isEmpty {
+//                    VisitorOpinionStrip(opinions: opinions, pageInset: pageInset)
+//                        .padding(.top, 4)
+//                        .padding(.bottom, 10)
+//                }
+                goToCameraButton
+                goToCollectionButton
             }
             .padding(.horizontal, pageInset)
             .padding(.top, 4)
@@ -79,6 +92,46 @@ struct PaintingDetailView: View {
         .buttonStyle(.plain)
         .accessibilityLabel("Back")
     }
+    
+    private var goToCollectionButton: some View {
+        Button {
+            dismiss()
+            // Give the NavigationStack a tick to pop before RootView transitions.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                onGoToCollection()
+            }
+        } label: {
+            Text("Go to Collection")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.black.opacity(0.8))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 13)
+        }
+        .buttonStyle(.plain)
+        .stickerCard(cornerRadius: 12)
+        .accessibilityLabel("Go to Collection")
+    }
+    
+    private var goToCameraButton: some View {
+        Button {
+            dismiss()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                onGoToCamera()
+            }
+        } label: {
+            Text("Find Another Painting")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 13)
+        }
+        .buttonStyle(.plain)
+        .stickerCard(
+            cornerRadius: 12,
+            fill: .yellow
+        )
+        .accessibilityLabel("Find Another Painting")
+    }
 }
 
 // CATATAN: jangan tambahkan #Preview di project ini.
@@ -86,3 +139,4 @@ struct PaintingDetailView: View {
 // karena JIT executor Previews gagal me-link static library ONNX Runtime yang
 // nempel di app target — bahkan preview Text kosong pun crash (sudah dibuktikan
 // di worktree bersih tanpa file UI). Lihat UI lewat Cmd+R (root = RootView).
+

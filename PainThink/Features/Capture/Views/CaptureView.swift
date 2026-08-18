@@ -14,9 +14,11 @@ struct CaptureView: View {
     var body: some View {
         Group {
             if let image = viewModel.capturedImage {
-                PolaroidDevelopView(image: image) {
-                    viewModel.reset()
-                }
+                PolaroidDevelopView(
+                    image: image,
+                    onGoToCollection: { viewModel.reset() },
+                    onGoToCamera: { viewModel.reset() }
+                )
             } else {
                 VStack(spacing: 20) {
                     Button("Take Photo") {

@@ -16,14 +16,13 @@ struct PhotoDevelopedView: View {
     let year: String
     let location: String
     let captureDate: String
-    let onBackToHome: () -> Void
-
+    let onGoToCamera: () -> Void
+    let onGoToCollection: () -> Void
+    
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    backRow
-
                     PolaroidFrameView(
                         image: image,
                         title: title,
@@ -47,8 +46,12 @@ struct PhotoDevelopedView: View {
                             .font(.system(size: 14))
                             .foregroundStyle(.black.opacity(0.65))
 
-                        seeOpinionsButton
-                            .padding(.top, 12)
+                        // CTAs: see opinions (navigates within the stack) and
+                        // go to collection (pops back to the collection screen).
+                        VStack(spacing: 10) {
+                            seeOpinionsButton
+                        }
+                        .padding(.top, 12)
                     }
                     .padding(.horizontal, 36)
                     .padding(.top, 32)
@@ -57,26 +60,14 @@ struct PhotoDevelopedView: View {
             }
             .background(Color.color1.ignoresSafeArea())
             .navigationDestination(for: FeedEntry.self) { entry in
-                PaintingDetailView(painting: entry.painting, opinions: entry.opinions)
+                PaintingDetailView(
+                    painting: entry.painting,
+                    opinions: entry.opinions,
+                    onGoToCollection: onGoToCollection,
+                    onGoToCamera: onGoToCamera
+                )
             }
         }
-    }
-
-    private var backRow: some View {
-        Button(action: onBackToHome) {
-            HStack(spacing: 6) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 13, weight: .semibold))
-                Text("Back to home")
-                    .font(.system(size: 14))
-            }
-            .foregroundStyle(.black.opacity(0.7))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .padding(.horizontal, 20)
-        .padding(.top, 12)
-        .accessibilityLabel("Back to home")
     }
 
     // Until detection returns real painting identity, the opinions screen is
@@ -91,10 +82,12 @@ struct PhotoDevelopedView: View {
             Text("See others opinion")
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(.black.opacity(0.85))
-                .padding(.horizontal, 22)
+                .frame(maxWidth: .infinity)
                 .padding(.vertical, 13)
         }
         .buttonStyle(.plain)
         .stickerCard(cornerRadius: 12, fill: Color.color3)
     }
+
+    
 }
