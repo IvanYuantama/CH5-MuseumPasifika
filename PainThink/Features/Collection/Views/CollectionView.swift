@@ -166,6 +166,7 @@ struct CollectionCardView: View {
     let entry: FeedEntry
     @State private var isFlipped = false
 
+
     var body: some View {
         ZStack {
             frontView
@@ -183,7 +184,15 @@ struct CollectionCardView: View {
     }
 
     // MARK: - Front View
-    private var frontView: some View {
+
+    private var frontView: some View { polaroidFace() }
+
+    /// Muka depan polaroid.
+    /// - showsLocation: baris lokasi cuma dipasang waktu di-share, di galeri nggak.
+    /// - fillsCell: di galeri kartunya ngisi penuh tinggi sel; waktu di-render
+    ///   jadi gambar, tingginya harus ngikut isi, kalau nggak hasilnya melar.
+    private func polaroidFace(showsLocation: Bool = false,
+                              fillsCell: Bool = true) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             PaintingImageView(
                 assetName: entry.painting.assetName,
@@ -208,12 +217,21 @@ struct CollectionCardView: View {
             Text(entry.painting.year)
                 .font(.system(size: 10, weight: .light))
                 .foregroundStyle(.black)
-                .padding(.bottom, 12)
+
+            if showsLocation {
+                LocationLabel(place: MuseumInfo.currentName, size: 10)
+                    .padding(.top, 8)
+            }
         }
         .padding(.horizontal, 12)
         .padding(.top, 12)
         .padding(.bottom, 12)
-        .frame(maxWidth: .infinity, alignment: .topLeading)
+        // maxHeight bikin kartu putih ngisi penuh tinggi sel. Tanpa ini tinggi sel
+        // ditentukan backView (yang lebih tinggi), sisanya jadi celah krem — itu
+        // yang bikin jarak vertikal keliatan jauh lebih lebar dari horizontal.
+        .frame(maxWidth: .infinity,
+               maxHeight: fillsCell ? .infinity : nil,
+               alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 10)
                 .fill(Color.white)
@@ -345,9 +363,14 @@ struct CollectionCardView: View {
     // Creates an image of the front of the polaroid card for sharing
     @MainActor
     private func sharePolaroid() {
-        let renderer = ImageRenderer(content: frontView.frame(width: 300))
+        // Polaroid yang sama kayak di galeri, cuma ditambah baris lokasi —
+        // sengaja cuma muncul di hasil share, galerinya tetap bersih.
+        let card = polaroidFace(showsLocation: true, fillsCell: false)
+            .frame(width: 300)
+
+        let renderer = ImageRenderer(content: card)
         renderer.scale = UIScreen.main.scale
-        
+
         if let image = renderer.uiImage {
             let activityVC = UIActivityViewController(activityItems: [image], applicationActivities: nil)
             if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,

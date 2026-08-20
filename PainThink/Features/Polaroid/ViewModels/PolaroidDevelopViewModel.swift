@@ -20,7 +20,7 @@ final class PolaroidDevelopViewModel {
     var paintingTitle = "Detecting…"
     var artistName = ""
     var year = ""
-    var location = "Unknown Location"
+    var location = MuseumInfo.currentName
     let captureDate: String
 
     // Set once classification + backend lookup finish, real or fallback.
@@ -98,7 +98,7 @@ final class PolaroidDevelopViewModel {
         paintingTitle = "Untitled"
         artistName = "Unknown Artist"
         year = "Undated"
-        location = "Unknown Location"
+        location = MuseumInfo.currentName
 
         record.paintingTitle = paintingTitle
         record.artistName = artistName
