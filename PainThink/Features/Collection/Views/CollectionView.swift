@@ -10,8 +10,8 @@ import SwiftUI
 // Favorites, two uniform cards each.
 struct CollectionView: View {
     let onCameraTap: () -> Void
-    private let horizontalSpacing: CGFloat = 15
-    private let verticalSpacing: CGFloat = 15
+    private let horizontalSpacing: CGFloat = 25
+    private let verticalSpacing: CGFloat = 32
     private let pageInset: CGFloat = 20
 
     // NavigationPath eksplisit agar tombol back di PaintingDetailView bisa pop ke CollectionView
@@ -200,23 +200,29 @@ struct CollectionCardView: View {
                 fallbackColors: PaintingInsights(opinions: entry.opinions).colorFeelings.map(\.color),
                 contentMode: .fit
             )
-            .frame(maxWidth: .infinity)
+            .frame(
+                maxWidth: fillsCell ? 110 : .infinity,
+                maxHeight: fillsCell ? 128 : .infinity
+            )
             .clipShape(RoundedRectangle(cornerRadius: 4))
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.top, fillsCell ? 8 : 0)
             .padding(.bottom, 10)
 
             Text(entry.painting.title)
-                .font(.system(size: 11, weight: .regular))
+                .font(.system(size: 14, weight: .regular, design: .rounded))
                 .foregroundStyle(.black)
                 .lineLimit(1)
 
             Text(entry.painting.artist)
-                .font(.system(size: 11, weight: .thin))
+                .font(.system(size: 14, weight: .thin, design: .rounded))
                 .foregroundStyle(.black)
                 .lineLimit(1)
 
             Text(entry.painting.year)
-                .font(.system(size: 10, weight: .light))
+                .font(.system(size: 14, weight: .light, design: .rounded))
                 .foregroundStyle(.black)
+                .padding(.bottom, fillsCell ? 40 : 0)
 
             if showsLocation {
                 LocationLabel(place: MuseumInfo.currentName, size: 10)
@@ -229,8 +235,8 @@ struct CollectionCardView: View {
         // maxHeight bikin kartu putih ngisi penuh tinggi sel. Tanpa ini tinggi sel
         // ditentukan backView (yang lebih tinggi), sisanya jadi celah krem — itu
         // yang bikin jarak vertikal keliatan jauh lebih lebar dari horizontal.
-        .frame(maxWidth: .infinity,
-               maxHeight: fillsCell ? .infinity : nil,
+        .frame(width: fillsCell ? 150 : nil,
+               height: fillsCell ? 250 : nil,
                alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 10)
@@ -339,6 +345,7 @@ struct CollectionCardView: View {
         .padding(.vertical, 16)
         .frame(
             width: 150,
+            height: 250,
             alignment: .topLeading
         )
         .background(
