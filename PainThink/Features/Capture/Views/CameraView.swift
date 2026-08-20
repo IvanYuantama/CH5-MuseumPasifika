@@ -96,8 +96,9 @@ struct CameraView: View {
                 // Detection overlay
                 if cameraManager.isLiveDetectionEnabled {
                     DetectionOverlayView(objects: cameraManager.detectedObjects)
-                        .padding(10)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .padding(10)
+                        
                 }
                 
                 // Countdown
