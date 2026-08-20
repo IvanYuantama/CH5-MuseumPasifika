@@ -32,4 +32,7 @@ struct Activity: Identifiable {
     var emojiOptions: [EmojiMoodOption] = []
     var paletteOptions: [PaletteMoodOption] = []
     var dragOptions: [String] = []
+    // Backend question ID, set only when this activity was built from a
+    // matched painting's real question set (nil for the local fallback set).
+    var questionID: String? = nil
 }

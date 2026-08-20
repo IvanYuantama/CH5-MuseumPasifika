@@ -17,16 +17,20 @@ struct CollectionView: View {
     // NavigationPath eksplisit agar tombol back di PaintingDetailView bisa pop ke CollectionView
     @State private var navPath = NavigationPath()
 
-    // All 6 sample entries used as dummy gallery items.
-    private var myCollection: [FeedEntry] { SampleFeed.entries }
+    // The signed-in user's own posts, loaded from the backend. The card's back
+    // face and Details statistics still run on hardcoded `opinions` — see
+    // `feedEntry(from:index:)` — until the backend exposes per-post opinions.
+    @State private var myCollection: [FeedEntry] = []
+    @State private var isLoading = true
 
-    // Toggle to false to see the empty state during development.
     private var hasItems: Bool { !myCollection.isEmpty }
 
     var body: some View {
         NavigationStack(path: $navPath) {
             VStack(spacing: 0) {
-                if hasItems {
+                if isLoading {
+                    loadingContent
+                } else if hasItems {
                     filledContent
                 } else {
                     emptyContent
@@ -44,6 +48,75 @@ struct CollectionView: View {
             }
             .background(Color.color1.ignoresSafeArea())
         }
+        .task { await loadPosts() }
+    }
+
+    // MARK: - Data loading
+
+    private func loadPosts() async {
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let userID = try await SessionManager.shared.userID()
+            let posts = try await APIClient.shared.fetchUserPosts(userID: userID)
+
+            // Prefetch every card image into ImageCache while the spinner is still
+            // up, so the grid appears with images already resolved — no per-card
+            // loading flash once `isLoading` flips false.
+            async let entries = Self.feedEntries(from: posts)
+            async let preload: Void = Self.preloadImages(for: posts)
+
+            myCollection = await entries
+            _ = await preload
+        } catch {
+            myCollection = []
+        }
+    }
+
+    private static func preloadImages(for posts: [PostResponseDTO]) async {
+        await withTaskGroup(of: Void.self) { group in
+            for post in posts {
+                guard let url = URL(string: post.image) else { continue }
+                group.addTask { await ImageCache.shared.preload(url) }
+            }
+        }
+    }
+
+    // Post carries no artist/year itself, so each is looked up from the
+    // paintings API by title, in parallel. A title with no backend match
+    // (e.g. an unmatched "Untitled" capture) falls back to the same
+    // placeholder strings used elsewhere for an unresolved painting.
+    private static func feedEntries(from posts: [PostResponseDTO]) async -> [FeedEntry] {
+        await withTaskGroup(of: (Int, FeedEntry).self) { group in
+            for (index, post) in posts.enumerated() {
+                group.addTask { (index, await feedEntry(from: post, index: index)) }
+            }
+
+            var entries = [FeedEntry?](repeating: nil, count: posts.count)
+            for await (index, entry) in group {
+                entries[index] = entry
+            }
+            return entries.compactMap { $0 }
+        }
+    }
+
+    // The backend doesn't serve per-post opinions yet, so the Details screen's
+    // statistics reuse the same canned SampleFeed opinion sets as before —
+    // cycled by index so posts still get some spread rather than all showing
+    // identical numbers.
+    private static func feedEntry(from post: PostResponseDTO, index: Int) async -> FeedEntry {
+        let matched = try? await APIClient.shared.fetchPainting(byTitle: post.title)
+        let sampleOpinions = SampleFeed.entries[index % SampleFeed.entries.count].opinions
+
+        let painting = Painting(
+            title: post.title,
+            artist: matched?.artist ?? "Unknown Artist",
+            year: matched?.year ?? "Undated",
+            museum: post.location.isEmpty ? MuseumInfo.currentName : post.location,
+            imageURLString: post.image
+        )
+        return FeedEntry(painting: painting, opinions: sampleOpinions)
     }
 
     // MARK: - Content states
@@ -96,7 +169,14 @@ struct CollectionView: View {
         }
     }
 
-    
+    private var loadingContent: some View {
+        ZStack {
+            Color.color1.ignoresSafeArea()
+            ProgressView()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
     private var emptyContent: some View {
         ZStack(alignment: .topLeading) {
             Color.color1.ignoresSafeArea()

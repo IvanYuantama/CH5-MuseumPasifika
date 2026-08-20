@@ -63,4 +63,48 @@ enum ActivityGenerator {
             ),
         ]
     }
+
+    // Maps the matched painting's backend question set onto `Activity`. "color"
+    // questions ship with no answers by contract — their options come from
+    // the same on-device dominant-color extraction used by the local fallback.
+    static func makeActivities(from questions: [QuestionDTO], image: UIImage) -> [Activity] {
+        var palette = DominantColorExtractor.extractPalette(from: image, count: 4).map { Color($0) }
+        if palette.count < 3 {
+            palette = fallbackPalette
+        }
+
+        func paletteOptions() -> [PaletteMoodOption] {
+            palette.shuffled().enumerated().map { index, color in
+                PaletteMoodOption(color: color, moodLabel: colorMoodLabels[index % colorMoodLabels.count])
+            }
+        }
+
+        return questions.compactMap { question in
+            switch question.type {
+            case "dragdrop":
+                return Activity(
+                    kind: .dragAndDrop,
+                    prompt: question.text,
+                    dragOptions: question.answers.map(\.label),
+                    questionID: question.id
+                )
+            case "emoji":
+                return Activity(
+                    kind: .emojiMood,
+                    prompt: question.text,
+                    emojiOptions: question.answers.map { EmojiMoodOption(emoji: $0.value, moodLabel: $0.label) },
+                    questionID: question.id
+                )
+            case "color":
+                return Activity(
+                    kind: .colorPaletteMood,
+                    prompt: question.text,
+                    paletteOptions: paletteOptions(),
+                    questionID: question.id
+                )
+            default:
+                return nil
+            }
+        }
+    }
 }

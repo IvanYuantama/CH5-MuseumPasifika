@@ -19,8 +19,16 @@ struct PaintingImageView: View {
     /// .fill crops image to fill the frame; .fit lets height follow the image's natural aspect ratio.
     var contentMode: ContentMode = .fill
 
+    // Only used the first time a given URL is ever loaded — once cached, `artwork`
+    // resolves synchronously off `ImageCache` and this never gets set.
+    @State private var loadedImage: UIImage?
+
     private var artwork: Image? {
         if let uiImage { return Image(uiImage: uiImage) }
+        if let loadedImage { return Image(uiImage: loadedImage) }
+        if let remoteURL, let cached = ImageCache.shared.image(for: remoteURL) {
+            return Image(uiImage: cached)
+        }
         guard let assetName, UIImage(named: assetName) != nil else { return nil }
         return Image(assetName)
     }
@@ -31,23 +39,19 @@ struct PaintingImageView: View {
     }
 
     var body: some View {
-        if let artwork {
-            artwork
-                .resizable()
-                .aspectRatio(contentMode: contentMode)
-        } else if let remoteURL {
-            AsyncImage(url: remoteURL) { phase in
-                if let image = phase.image {
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: contentMode)
-                } else {
-                    // AsyncImage loading: fallback ke temp placeholder
-                    tempPlaceholder
-                }
+        Group {
+            if let artwork {
+                artwork
+                    .resizable()
+                    .aspectRatio(contentMode: contentMode)
+            } else {
+                tempPlaceholder
             }
-        } else {
-            tempPlaceholder
+        }
+        .task(id: imageURLString) {
+            guard uiImage == nil, loadedImage == nil, let remoteURL,
+                  ImageCache.shared.image(for: remoteURL) == nil else { return }
+            loadedImage = await ImageCache.shared.preload(remoteURL)
         }
     }
 
