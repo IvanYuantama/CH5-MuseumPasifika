@@ -54,7 +54,8 @@ struct PhotoDevelopedView: View {
                         }
                         .padding(.top, 12)
                     }
-                    .padding(.horizontal, 36)
+                    .frame(width: 252, alignment: .leading)
+                    .frame(maxWidth: .infinity)
                     .padding(.top, 32)
                 }
                 .padding(.bottom, 40)

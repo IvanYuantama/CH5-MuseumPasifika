@@ -57,8 +57,11 @@ struct ColorFeelingsCard: View {
             // Mengubah frame menjadi nilai absolut 273, padding horizontal 60 dihapus
             .frame(width: 273)
             .padding(.vertical, 24)
-            .background(Color.white)
-            .stickerCard(cornerRadius: 24, shadowOffset: CGSize(width: 5, height: 6))
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.white)
+            )
+            .stickerCard(cornerRadius: 20, shadowOffset: CGSize(width: 5, height: 6))
         }
     }
 }

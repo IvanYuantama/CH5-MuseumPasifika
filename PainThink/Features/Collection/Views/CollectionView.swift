@@ -349,14 +349,14 @@ struct CollectionCardView: View {
             alignment: .topLeading
         )
         .background(
-            RoundedRectangle(cornerRadius: 24)
+            RoundedRectangle(cornerRadius: 10)
                 .fill(Color.white)
         )
         .clipShape(
-            RoundedRectangle(cornerRadius: 24)
+            RoundedRectangle(cornerRadius: 10)
         )
         .stickerCard(
-            cornerRadius: 24,
+            cornerRadius: 10,
             shadowOffset: CGSize(width: 4, height: 5)
         )
     }

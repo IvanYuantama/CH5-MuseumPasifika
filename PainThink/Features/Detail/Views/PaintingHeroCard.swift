@@ -30,18 +30,18 @@ struct PaintingHeroCard: View {
             )
             // frame(width:) konkret → scaledToFit() dapat menghitung height dari aspect ratio asli
             .frame(width: photoWidth)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: 2))
             .padding(.horizontal, inset)
             .padding(.top, inset)
             .padding(.bottom, 40)
         }
         .frame(width: cardWidth)
         .background(
-            RoundedRectangle(cornerRadius: 24)
+            RoundedRectangle(cornerRadius: 3)
                 .fill(Color.white)
         )
         .stickerCard(
-            cornerRadius: 24,
+            cornerRadius: 3,
             shadowOffset: CGSize(width: 4, height: 5)
         )
     }
