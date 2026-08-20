@@ -10,9 +10,12 @@ import SwiftUI
 // Favorites, two uniform cards each.
 struct CollectionView: View {
     let onCameraTap: () -> Void
-    private let horizontalSpacing: CGFloat = 26
-    private let verticalSpacing: CGFloat = 32
+    private let horizontalSpacing: CGFloat = 15
+    private let verticalSpacing: CGFloat = 15
     private let pageInset: CGFloat = 20
+
+    // NavigationPath eksplisit agar tombol back di PaintingDetailView bisa pop ke CollectionView
+    @State private var navPath = NavigationPath()
 
     // All 6 sample entries used as dummy gallery items.
     private var myCollection: [FeedEntry] { SampleFeed.entries }
@@ -21,7 +24,7 @@ struct CollectionView: View {
     private var hasItems: Bool { !myCollection.isEmpty }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navPath) {
             VStack(spacing: 0) {
                 if hasItems {
                     filledContent
@@ -86,7 +89,9 @@ struct CollectionView: View {
                 painting: entry.painting,
                 opinions: entry.opinions,
                 onGoToCollection: { /* already in collection, no-op */ },
-                onGoToCamera: onCameraTap
+                onGoToCamera: onCameraTap,
+                // Back button pop dari navPath ini → kembali ke My Collection
+                onBack: { navPath.removeLast() }
             )
         }
     }
@@ -137,7 +142,7 @@ struct CollectionView: View {
                 Spacer()
                 Spacer()
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .frame(width: 150, alignment: .topLeading)
         }
     }
 
@@ -183,9 +188,10 @@ struct CollectionCardView: View {
             PaintingImageView(
                 assetName: entry.painting.assetName,
                 imageURLString: entry.painting.imageURLString,
-                fallbackColors: PaintingInsights(opinions: entry.opinions).colorFeelings.map(\.color)
+                fallbackColors: PaintingInsights(opinions: entry.opinions).colorFeelings.map(\.color),
+                contentMode: .fit
             )
-            .frame(maxWidth: .infinity, maxHeight: 128)
+            .frame(maxWidth: .infinity)
             .clipShape(RoundedRectangle(cornerRadius: 4))
             .padding(.bottom, 10)
 
@@ -202,12 +208,12 @@ struct CollectionCardView: View {
             Text(entry.painting.year)
                 .font(.system(size: 10, weight: .light))
                 .foregroundStyle(.black)
-                .padding(.bottom, 52)
+                .padding(.bottom, 12)
         }
         .padding(.horizontal, 12)
         .padding(.top, 12)
         .padding(.bottom, 12)
-        .frame(width: 150, height: 250, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 10)
                 .fill(Color.white)
@@ -315,7 +321,6 @@ struct CollectionCardView: View {
         .padding(.vertical, 16)
         .frame(
             width: 150,
-            height: 250,
             alignment: .topLeading
         )
         .background(

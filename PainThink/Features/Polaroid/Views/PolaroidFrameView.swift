@@ -29,15 +29,13 @@ struct PolaroidFrameView: View {
 //        return photoWidth * clampedRatio
 //    }
     
-    private let maxPhotoHeight: CGFloat = 233 // Batas aman agar kartu tidak menutupi seluruh layar
+    private let maxPhotoHeight: CGFloat = 320 // Batas maksimal agar kartu tidak meluber layar
 
-        private var photoHeight: CGFloat {
-            let ratio = image.size.height / max(image.size.width, 1)
-            let calculatedHeight = photoWidth * ratio
-            
-            // Membatasi tinggi: minimal sama dengan lebarnya (1:1), maksimal sesuai maxPhotoHeight
-            return min(max(calculatedHeight, photoWidth), maxPhotoHeight)
-        }
+    private var photoHeight: CGFloat {
+        let ratio = image.size.height / max(image.size.width, 1)
+        // Tinggi murni relatif terhadap lebar: hanya dibatasi maksimum, tidak ada minimum paksa
+        return min(photoWidth * ratio, maxPhotoHeight)
+    }
 
     private var developOpacity: Double {
         guard total > 0 else { return 0 }
@@ -104,19 +102,17 @@ struct PolaroidFrameView: View {
     }
 
     private var photo: some View {
-        ZStack {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .frame(width: photoWidth, height: photoHeight)
-                .clipped()
-                .clipShape(RoundedRectangle(cornerRadius: 2))
-
-            RoundedRectangle(cornerRadius: 2)
-                .fill(Color.black)
-                .frame(width: photoWidth, height: photoHeight)
-                .opacity(developOpacity)
-        }
+        Image(uiImage: image)
+            .resizable()
+            .scaledToFit()              // Tinggi mengikuti aspect ratio asli, tidak di-crop
+            .frame(width: photoWidth)   // Width fixed, height relatif
+            .clipShape(RoundedRectangle(cornerRadius: 2))
+            // Overlay mengikuti ukuran photo secara otomatis
+            .overlay {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.black)
+                    .opacity(developOpacity)
+            }
     }
     
     private var caption: some View {

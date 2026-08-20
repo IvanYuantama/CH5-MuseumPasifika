@@ -20,8 +20,11 @@ struct PhotoDevelopedView: View {
     let onGoToCamera: () -> Void
     let onGoToCollection: () -> Void
     
+    // NavigationPath eksplisit agar bisa pop programmatically dari PaintingDetailView
+    @State private var navPath = NavigationPath()
+    
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navPath) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     PolaroidFrameView(
@@ -62,7 +65,11 @@ struct PhotoDevelopedView: View {
                     painting: entry.painting,
                     opinions: entry.opinions,
                     onGoToCollection: onGoToCollection,
-                    onGoToCamera: onGoToCamera
+                    onGoToCamera: onGoToCamera,
+                    // Back button pop dari navPath ini → kembali ke "See What Others Saw"
+                    onBack: { navPath.removeLast() },
+                    // Tampilkan foto hasil kamera sebagai hero image
+                    capturedImage: image
                 )
             }
         }

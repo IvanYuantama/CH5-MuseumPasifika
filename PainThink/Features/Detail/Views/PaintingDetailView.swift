@@ -17,18 +17,28 @@ struct PaintingDetailView: View {
     
     let onGoToCollection: () -> Void
     let onGoToCamera: () -> Void
+    /// Closure eksplisit untuk tombol back. Caller mengisi ini dengan `path.removeLast()`
+    /// agar pop terjadi pada NavigationPath yang benar. Jika nil, fallback ke `dismiss()`.
+    let onBack: (() -> Void)?
+    /// Foto langsung dari kamera untuk ditampilkan sebagai hero image.
+    /// Nil untuk entry yang berasal dari feed/collection (gunakan asset/URL).
+    let capturedImage: UIImage?
 
     init(
         painting: Painting,
         opinions: [VisitorOpinion],
         onGoToCollection: @escaping () -> Void = {},
-        onGoToCamera: @escaping () -> Void = {}
+        onGoToCamera: @escaping () -> Void = {},
+        onBack: (() -> Void)? = nil,
+        capturedImage: UIImage? = nil
     ) {
         self.painting = painting
         self.opinions = opinions
         self.insights = PaintingInsights(opinions: opinions)
         self.onGoToCollection = onGoToCollection
         self.onGoToCamera = onGoToCamera
+        self.onBack = onBack
+        self.capturedImage = capturedImage
     }
 
     var body: some View {
@@ -37,7 +47,8 @@ struct PaintingDetailView: View {
                 PaintingHeroCard(
                     painting: painting,
                     opinionCount: insights.total,
-                    paletteColors: insights.colorFeelings.map(\.color)
+                    paletteColors: insights.colorFeelings.map(\.color),
+                    capturedImage: capturedImage
                 )
 
                 // Caption dipindahkan ke luar card
@@ -93,7 +104,13 @@ struct PaintingDetailView: View {
 
     private var backButton: some View {
         Button {
-            dismiss()
+            if let onBack {
+                // Gunakan pop eksplisit yang di-inject caller (NavigationPath.removeLast)
+                onBack()
+            } else {
+                // Fallback untuk callers yang tidak inject onBack (ExpoView, SearchView)
+                dismiss()
+            }
         } label: {
             Image(systemName: "chevron.left")
                 .font(.system(size: 18, weight: .regular))

@@ -11,23 +11,31 @@ struct PaintingHeroCard: View {
     let painting: Painting
     let opinionCount: Int
     let paletteColors: [Color]
+    /// Foto langsung dari kamera — ditampilkan sebagai hero image jika ada.
+    var capturedImage: UIImage? = nil
 
     private let inset: CGFloat = 16
+    private let cardWidth: CGFloat = 273
+    // Lebar konkret yang diketahui oleh scaledToFit() untuk menghitung height relatif
+    private var photoWidth: CGFloat { cardWidth - inset * 2 }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             PaintingImageView(
                 assetName: painting.assetName,
                 imageURLString: painting.imageURLString,
-                fallbackColors: paletteColors
+                fallbackColors: paletteColors,
+                uiImage: capturedImage,
+                contentMode: .fit
             )
-            .frame(maxWidth: .infinity)
-            .frame(height: 360)
+            // frame(width:) konkret → scaledToFit() dapat menghitung height dari aspect ratio asli
+            .frame(width: photoWidth)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
             .padding(.horizontal, inset)
             .padding(.top, inset)
             .padding(.bottom, 40)
         }
-        .frame(width: 273)
+        .frame(width: cardWidth)
         .background(
             RoundedRectangle(cornerRadius: 24)
                 .fill(Color.white)
