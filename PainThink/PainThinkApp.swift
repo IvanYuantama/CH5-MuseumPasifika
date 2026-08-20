@@ -7,10 +7,19 @@
 
 import SwiftUI
 import SwiftData
+import TipKit
 
 @main
 struct PainThinkApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
+    init() {
+        // Wajib dipanggil sekali sebelum tip apa pun bisa muncul.
+        try? Tips.configure([
+            .displayFrequency(.immediate),
+            .datastoreLocation(.applicationDefault)
+        ])
+    }
 
     var body: some Scene {
         WindowGroup {

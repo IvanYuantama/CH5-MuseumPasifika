@@ -1,4 +1,5 @@
 import SwiftUI
+import TipKit
 
 // Redesigned capture screen: full-bleed viewfinder fills top portion,
 // corner-bracket overlay in yellow, circular shutter button below,
@@ -126,7 +127,10 @@ struct CameraView: View {
     // MARK: - Shutter button (ring style)
     
     @State private var shutterRotation: Double = 0
-    
+
+    // Tip "cincinnya bisa diputer buat zoom" — hilang sendiri setelah dipakai.
+    private let zoomTip = ShutterZoomTip()
+
     private var shutterButton: some View {
             ZStack {
                 // Inner white circle (Shutter)
@@ -189,12 +193,16 @@ struct CameraView: View {
                         .onEnded { _ in
                             // Reset drag angle saat sentuhan dilepas
                             lastDragAngle = nil
+                            // Ring-nya udah ketemu sendiri — tip gak perlu muncul lagi.
+                            ShutterZoomTip.hasZoomed = true
                         }
                 )
             }
             .frame(width: 80, height: 80)
             .scaleEffect(isCapturing ? 0.92 : 1)
             .animation(.easeOut(duration: 0.12), value: isCapturing)
+            // .top = popover muncul DI ATAS shutter, karena tombolnya di dasar layar.
+            .popoverTip(zoomTip, arrowEdge: .top)
         }
     
     // MARK: - Polaroid stub (bottom left)
