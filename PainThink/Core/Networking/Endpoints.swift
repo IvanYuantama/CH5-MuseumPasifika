@@ -7,10 +7,32 @@
 
 enum Endpoint {
     static let baseURL = "https://discoverably-unlatticed-marylynn.ngrok-free.dev"
-    static let paintingSearch = "\(baseURL)/api/v1/paintings/search"
+
+    // Health
+    static let health = "\(baseURL)/health"
+
+    // Auth
+    static let authRegister = "\(baseURL)/api/v1/auth/register"
     static let authLogin = "\(baseURL)/api/v1/auth/login"
+    static let authExists = "\(baseURL)/api/v1/auth/exists"
+    static let authGenerateAccount = "\(baseURL)/api/v1/auth/generate-account"
+
+    // Users
+    static let usersMe = "\(baseURL)/api/v1/users/me"
+
+    // Posts
     static let posts = "\(baseURL)/api/v1/posts"
+
+    // Paintings
+    static let paintings = "\(baseURL)/api/v1/paintings"
+    static let paintingSearch = "\(baseURL)/api/v1/paintings/search"
+
+    // Uploads
     static let uploadImage = "\(baseURL)/api/v1/uploads/image"
+
+    static func painting(id: String) -> String {
+        "\(baseURL)/api/v1/paintings/\(id)"
+    }
 
     static func paintingQuestions(id: String) -> String {
         "\(baseURL)/api/v1/paintings/\(id)/questions"

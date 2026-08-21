@@ -18,3 +18,19 @@ struct PaintingDTO: Decodable {
     let description: String
     let year: String
 }
+
+struct CreatePaintingRequest: Encodable {
+    let title: String
+    let artist: String
+    let image: String
+    let description: String?
+    let year: String?
+}
+
+struct UpdatePaintingRequest: Encodable {
+    let title: String?
+    let artist: String?
+    let image: String?
+    let description: String?
+    let year: String?
+}

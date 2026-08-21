@@ -3,8 +3,14 @@
 //  PainThink
 //
 
+struct RegisterRequest: Encodable {
+    let username: String
+    let email: String?
+    let password: String
+}
+
 struct LoginRequest: Encodable {
-    let email: String
+    let identifier: String
     let password: String
 }
 
@@ -17,4 +23,8 @@ struct UserResponseDTO: Decodable {
     let id: String
     let username: String
     let email: String
+}
+
+struct ExistsResponse: Decodable {
+    let exists: Bool
 }

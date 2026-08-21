@@ -3,13 +3,18 @@
 //  PainThink
 //
 
-// The app has no login UI yet — every submission is attributed to this
-// single default account. Replace with real per-user auth once that lands.
+// Anonymous per-device account: on first launch, generate-account mints a
+// UUID-username account with an empty password and stores the username in
+// Keychain so it survives app reinstalls.
+// Subsequent launches log back in with that same username + empty password.
+import Security
+import Foundation
+
 actor SessionManager {
     static let shared = SessionManager()
+    private init() {}
 
-    private let email = "wayanrizkywijaya@gmail.com"
-    private let password = "userkiki"
+    private let usernameKey = "painthink.generated_username"
 
     private var cached: AuthResponse?
     private var loginTask: Task<AuthResponse, Error>?
@@ -30,7 +35,12 @@ actor SessionManager {
         }
 
         let task = Task<AuthResponse, Error> {
-            try await APIClient.shared.login(email: email, password: password)
+            if let username = self.loadUsername() {
+                return try await APIClient.shared.login(identifier: username, password: "")
+            }
+            let result = try await APIClient.shared.generateAccount()
+            self.saveUsername(result.user.username)
+            return result
         }
         loginTask = task
 
@@ -43,5 +53,29 @@ actor SessionManager {
             loginTask = nil
             throw error
         }
+    }
+
+    private func saveUsername(_ username: String) {
+        guard let data = username.data(using: .utf8) else { return }
+        let query: [CFString: Any] = [
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrAccount: usernameKey,
+            kSecValueData: data
+        ]
+        SecItemDelete(query as CFDictionary)
+        SecItemAdd(query as CFDictionary, nil)
+    }
+
+    private func loadUsername() -> String? {
+        let query: [CFString: Any] = [
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrAccount: usernameKey,
+            kSecReturnData: true,
+            kSecMatchLimit: kSecMatchLimitOne
+        ]
+        var result: AnyObject?
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
+              let data = result as? Data else { return nil }
+        return String(data: data, encoding: .utf8)
     }
 }
