@@ -222,7 +222,7 @@ struct CollectionView: View {
                 Spacer()
                 Spacer()
             }
-            .frame(width: 150, alignment: .topLeading)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
         }
     }
 

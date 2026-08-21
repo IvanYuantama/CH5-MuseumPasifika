@@ -25,36 +25,29 @@ struct DragDropMoodPickerView: View {
     }
 
     var body: some View {
-            // 1. Ubah alignment VStack menjadi .center (atau hapus parameternya karena center adalah default)
-            VStack(alignment: .center, spacing: 16) {
-                HStack {
-                    Spacer()
-                    dropTargetLabel
-                        .background(
-                            GeometryReader { geo in
-                                Color.clear
-                                    .onAppear { dropTargetFrame = geo.frame(in: .named("dragSpace")) }
-                                    .onChange(of: geo.frame(in: .named("dragSpace"))) { _, newValue in
-                                        dropTargetFrame = newValue
-                                    }
+        VStack(alignment: .center, spacing: 16) {
+            // Drop target — centered horizontally
+            dropTargetLabel
+                .background(
+                    GeometryReader { geo in
+                        Color.clear
+                            .onAppear { dropTargetFrame = geo.frame(in: .named("dragSpace")) }
+                            .onChange(of: geo.frame(in: .named("dragSpace"))) { _, newValue in
+                                dropTargetFrame = newValue
                             }
-                        )
-                    Spacer()
-                }
-
-                // 2. Bungkus FlowLayout dengan HStack dan apit menggunakan Spacer()
-                HStack {
-                    Spacer()
-                    FlowLayout(spacing: 8, lineSpacing: 8) {
-                        ForEach(availableOptions, id: \.self) { option in
-                            chip(option)
-                        }
                     }
-                    Spacer()
+                )
+
+            // Chips — FlowLayout gets full bounded width so it can wrap properly
+            FlowLayout(spacing: 8, lineSpacing: 8) {
+                ForEach(availableOptions, id: \.self) { option in
+                    chip(option)
                 }
             }
-            .coordinateSpace(name: "dragSpace")
+            .frame(maxWidth: .infinity)
         }
+        .coordinateSpace(name: "dragSpace")
+    }
 
     // The hole always renders behind whatever's inset in it, so it naturally
     // shrinks to the empty placeholder size or grows to fit the dropped card.
@@ -64,6 +57,8 @@ struct DragDropMoodPickerView: View {
                 Text(selectedLabel)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.black.opacity(0.8))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(nil)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
                     .background(RoundedRectangle(cornerRadius: 8).fill(Color.color3))
@@ -85,8 +80,10 @@ struct DragDropMoodPickerView: View {
         Text(option)
             .font(.system(size: 13))
             .foregroundStyle(.black.opacity(0.7))
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .multilineTextAlignment(.center)
+            .lineLimit(nil)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
             .stickerCard(cornerRadius: 10, shadowOffset: CGSize(width: 2, height: 3))
             .contentShape(Rectangle())
             .scaleEffect(draggingOption == option ? 1.08 : 1)
@@ -95,7 +92,10 @@ struct DragDropMoodPickerView: View {
             .gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .named("dragSpace"))
                     .onChanged { value in
-                        if draggingOption == nil { Haptics.tap() }
+                        if draggingOption == nil,
+                           abs(value.translation.width) + abs(value.translation.height) > 2 {
+                            Haptics.tap()
+                        }
                         draggingOption = option
                         dragTranslation = value.translation
                     }
@@ -109,6 +109,12 @@ struct DragDropMoodPickerView: View {
                             dragTranslation = .zero
                         }
                     }
+            )
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    Haptics.success()
+                    onSelect(option)
+                }
             )
     }
 }

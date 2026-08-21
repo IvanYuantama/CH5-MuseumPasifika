@@ -9,6 +9,7 @@ import SwiftData
 struct PolaroidDevelopView: View {
     @State private var viewModel: PolaroidDevelopViewModel
     @State private var currentPage = 0
+    @State private var pageHeights: [Int: CGFloat] = [:]
     @Environment(\.modelContext) private var modelContext
     let onGoToCollection: () -> Void
     let onGoToCamera: () -> Void
@@ -69,26 +70,33 @@ struct PolaroidDevelopView: View {
                         ForEach(Array(viewModel.activities.enumerated()), id: \.element.id) { index, activity in
                             ActivityCardView(
                                 activity: activity,
-                                selectedLabel: viewModel.answers[activity.id]
-                            ) { moodLabel in
-                                withAnimation {
-                                    viewModel.select(moodLabel, for: activity)
-                                }
-                                if index < viewModel.activities.count - 1 {
-                                    Task {
-                                        try? await Task.sleep(nanoseconds: 400_000_000)
-                                        withAnimation {
-                                            currentPage = index + 1
+                                selectedLabel: viewModel.answers[activity.id],
+                                onSelect: { moodLabel in
+                                    withAnimation {
+                                        viewModel.select(moodLabel, for: activity)
+                                    }
+                                    if index < viewModel.activities.count - 1 {
+                                        Task {
+                                            try? await Task.sleep(nanoseconds: 400_000_000)
+                                            withAnimation {
+                                                currentPage = index + 1
+                                            }
                                         }
                                     }
+                                },
+                                onHeightChange: { height in
+                                    let roundedHeight = ceil(height)
+                                    if pageHeights[index] != roundedHeight {
+                                        pageHeights[index] = roundedHeight
+                                    }
                                 }
-                            }
+                            )
                             .padding(.horizontal, 24)
                             .tag(index)
                         }
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
-                    .frame(height: 250)
+                    .frame(height: tabViewHeight)
 
                     pageIndicator
                 }
@@ -109,6 +117,11 @@ struct PolaroidDevelopView: View {
             }
         }
         .animation(.easeOut(duration: 0.2), value: currentPage)
+    }
+
+    private var tabViewHeight: CGFloat {
+        let measuredHeight = pageHeights[currentPage] ?? 0
+        return max(measuredHeight, 360)
     }
 
 }
