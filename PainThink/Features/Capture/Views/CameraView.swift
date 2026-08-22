@@ -1,5 +1,4 @@
 import SwiftUI
-import TipKit
 
 // Redesigned capture screen: full-bleed viewfinder fills top portion,
 // corner-bracket overlay in yellow, circular shutter button below,
@@ -94,14 +93,10 @@ struct CameraView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding(10)
                 
-                // Detection overlay
-                if cameraManager.isLiveDetectionEnabled {
-                    DetectionOverlayView(objects: cameraManager.detectedObjects)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .padding(10)
-                        
-                }
-                
+                // Bounding box sengaja gak digambar — deteksinya tetap jalan
+                // karena hasilnya dipakai buat crop foto ke area lukisan
+                // (lihat currentBoundingBox di bawah).
+
                 // Countdown
                 if let countdown {
                     Text("\(countdown)")
@@ -128,8 +123,9 @@ struct CameraView: View {
     
     @State private var shutterRotation: Double = 0
 
-    // Tip "cincinnya bisa diputer buat zoom" — hilang sendiri setelah dipakai.
-    private let zoomTip = ShutterZoomTip()
+    // Muncul tiap kali layar kamera dibuka, hilang begitu ring-nya diputer —
+    // jadi gak numpuk di layar pas user lagi ngebidik.
+    @State private var showsZoomHint = true
 
     private var shutterButton: some View {
             ZStack {
@@ -193,16 +189,25 @@ struct CameraView: View {
                         .onEnded { _ in
                             // Reset drag angle saat sentuhan dilepas
                             lastDragAngle = nil
-                            // Ring-nya udah ketemu sendiri — tip gak perlu muncul lagi.
-                            ShutterZoomTip.hasZoomed = true
+                            // Ring-nya udah ketemu sendiri — petunjuk gak perlu lagi.
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                showsZoomHint = false
+                            }
                         }
                 )
             }
             .frame(width: 80, height: 80)
             .scaleEffect(isCapturing ? 0.92 : 1)
             .animation(.easeOut(duration: 0.12), value: isCapturing)
-            // .top = popover muncul DI ATAS shutter, karena tombolnya di dasar layar.
-            .popoverTip(zoomTip, arrowEdge: .top)
+            .overlay(alignment: .top) {
+                if showsZoomHint {
+                    ZoomHintCallout()
+                        .fixedSize()
+                        .offset(y: -48)
+                        .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                }
+            }
+            .onAppear { showsZoomHint = true }   // tiap masuk kamera, muncul lagi
         }
     
     // MARK: - Polaroid stub (bottom left)
