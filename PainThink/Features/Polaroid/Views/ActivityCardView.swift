@@ -39,7 +39,7 @@ struct ActivityCardView: View {
             case .emojiMood:
                 EmojiMoodPickerView(activity: activity, selectedLabel: selectedLabel, onSelect: onSelect)
             case .colorPaletteMood:
-                PaletteMoodPickerView(activity: activity, selectedLabel: selectedLabel, onSelect: onSelect)
+                ColorSnapPickerView(activity: activity, selectedLabel: selectedLabel, onSelect: onSelect)
             case .dragAndDrop:
                 DragDropMoodPickerView(activity: activity, selectedLabel: selectedLabel, onSelect: onSelect)
             }

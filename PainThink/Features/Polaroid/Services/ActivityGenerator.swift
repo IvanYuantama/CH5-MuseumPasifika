@@ -27,7 +27,7 @@ enum ActivityGenerator {
     ]
 
     static func generateActivities(for image: UIImage) -> [Activity] {
-        var palette = DominantColorExtractor.extractPalette(from: image, count: 4).map { Color($0) }
+        var palette = DominantColorExtractor.extractPalette(from: image, count: 6).map { Color($0) }
         if palette.count < 3 {
             palette = fallbackPalette
         }
@@ -68,7 +68,7 @@ enum ActivityGenerator {
     // questions ship with no answers by contract — their options come from
     // the same on-device dominant-color extraction used by the local fallback.
     static func makeActivities(from questions: [QuestionDTO], image: UIImage) -> [Activity] {
-        var palette = DominantColorExtractor.extractPalette(from: image, count: 4).map { Color($0) }
+        var palette = DominantColorExtractor.extractPalette(from: image, count: 6).map { Color($0) }
         if palette.count < 3 {
             palette = fallbackPalette
         }

@@ -64,7 +64,12 @@ struct DragDropMoodPickerView: View {
                     .background(RoundedRectangle(cornerRadius: 8).fill(Color.color3))
                     .padding(6)
             } else {
-                Color.clear
+                // Lubang kosong tanpa tulisan gak ngasih tau harus diapain.
+                // Petunjuknya ditaruh DI DALAM lubang, jadi mata langsung
+                // nyambungin perintah sama sasaran drop-nya.
+                Text("Drag here")
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundStyle(.black.opacity(0.32))
                     .frame(width: emptyHoleSize.width, height: emptyHoleSize.height)
             }
         }
