@@ -156,12 +156,15 @@ final class PolaroidDevelopViewModel {
     // failures are swallowed since there's no error UI for this background
     // sync today.
     private func submitResults() async {
-        guard let imageURL = try? await APIClient.shared.uploadImage(image) else { return }
+        do {
+            let imageURL = try await APIClient.shared.uploadImage(image)
+            await createOrUpdatePost(imageURL: imageURL)
 
-        await createOrUpdatePost(imageURL: imageURL)
-
-        if isUsingBackendQuestions, let paintingID = matchedPaintingID {
-            await submitAnswersToBackend(paintingID: paintingID)
+            if isUsingBackendQuestions, let paintingID = matchedPaintingID {
+                await submitAnswersToBackend(paintingID: paintingID)
+            }
+        } catch {
+            print("[PolaroidDevelopViewModel] submitResults: image upload failed: \(error)")
         }
     }
 
@@ -171,7 +174,11 @@ final class PolaroidDevelopViewModel {
             return SubmitAnswerRequest(questionID: questionID, value: value)
         }
         guard !payload.isEmpty else { return }
-        try? await APIClient.shared.submitAnswers(paintingID: paintingID, answers: payload)
+        do {
+            try await APIClient.shared.submitAnswers(paintingID: paintingID, answers: payload)
+        } catch {
+            print("[PolaroidDevelopViewModel] submitAnswersToBackend: failed: \(error)")
+        }
     }
 
     private func createOrUpdatePost(imageURL: String) async {
@@ -199,6 +206,7 @@ final class PolaroidDevelopViewModel {
                 )
             }
         } catch {
+            print("[PolaroidDevelopViewModel] createOrUpdatePost: failed: \(error)")
             return
         }
     }

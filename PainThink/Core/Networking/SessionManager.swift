@@ -36,7 +36,14 @@ actor SessionManager {
 
         let task = Task<AuthResponse, Error> {
             if let username = self.loadUsername() {
-                return try await APIClient.shared.login(identifier: username, password: "")
+                // The cached username may belong to a different backend's
+                // database (e.g. after switching `Endpoint.baseURL` to a new
+                // host) — login there fails since that user was never
+                // created on it. Fall back to minting a fresh account rather
+                // than leaving the app stuck failing every request.
+                if let loggedIn = try? await APIClient.shared.login(identifier: username, password: "") {
+                    return loggedIn
+                }
             }
             let result = try await APIClient.shared.generateAccount()
             self.saveUsername(result.user.username)

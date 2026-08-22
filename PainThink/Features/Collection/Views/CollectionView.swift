@@ -70,6 +70,7 @@ struct CollectionView: View {
             myCollection = await entries
             _ = await preload
         } catch {
+            print("[CollectionView] loadPosts: failed: \(error)")
             myCollection = []
         }
     }
