@@ -447,15 +447,64 @@ struct CollectionCardView: View {
         return String(words.prefix(2).joined(separator: " "))
     }
 
+    // Halaman yang di-share: wordmark, polaroid, lalu HANYA jawaban
+    // kontekstual + warna yang dipilih. Jawaban deskriptif ("apa yang
+    // keliatan") sengaja gak dibawa — itu bagian yang gak menarik dipamerin.
+    // Cuma ada di hasil share, kartu di galeri tetap bersih.
+    private var shareComposition: some View {
+        let insight = PaintingInsights(opinions: entry.opinions)
+
+        return VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                Text("PainT").foregroundStyle(.black)
+                Text("hink").foregroundStyle(Color.color3)
+            }
+            .font(.system(size: 30, weight: .heavy, design: .rounded))
+            .padding(.top, 26)
+            .padding(.bottom, 28)
+
+            polaroidFace(showsLocation: true, fillsCell: false)
+                .frame(width: 268)
+
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 7) {
+                    Text(shortTitle(for: entry.painting.title))
+                        .font(.system(size: 27, weight: .bold, design: .rounded))
+                        .foregroundStyle(.black)
+
+                    // TODO: pakai jawaban asli user begitu PostResponseDTO.questions
+                    // ikut dibawa ke FeedEntry — sekarang masih dari opinion contoh.
+                    Text(insight.moods.first?.label ?? "Warm")
+                        .font(.system(size: 17, design: .rounded))
+                        .foregroundStyle(.black)
+
+                    Text("Feel Safe")
+                        .font(.system(size: 17, design: .rounded))
+                        .foregroundStyle(.black)
+                        .padding(.bottom, 2)
+                        .overlay(alignment: .bottom) {
+                            Rectangle().fill(Color.color3).frame(height: 2)
+                        }
+                }
+
+                Spacer(minLength: 0)
+
+                Circle()
+                    .fill(insight.colorFeelings.first?.color ?? Color.color3)
+                    .frame(width: 96, height: 96)
+            }
+            .padding(.horizontal, 26)
+            .padding(.top, 34)
+            .padding(.bottom, 32)
+        }
+        .frame(width: 320)
+        .background(Color.color1)
+    }
+
     // Creates an image of the front of the polaroid card for sharing
     @MainActor
     private func sharePolaroid() {
-        // Polaroid yang sama kayak di galeri, cuma ditambah baris lokasi —
-        // sengaja cuma muncul di hasil share, galerinya tetap bersih.
-        let card = polaroidFace(showsLocation: true, fillsCell: false)
-            .frame(width: 300)
-
-        let renderer = ImageRenderer(content: card)
+        let renderer = ImageRenderer(content: shareComposition)
         renderer.scale = UIScreen.main.scale
 
         if let image = renderer.uiImage {
