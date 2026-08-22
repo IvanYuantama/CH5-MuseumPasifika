@@ -116,7 +116,7 @@ struct CollectionView: View {
             museum: post.location.isEmpty ? MuseumInfo.currentName : post.location,
             imageURLString: post.image
         )
-        return FeedEntry(painting: painting, opinions: sampleOpinions)
+        return FeedEntry(painting: painting, opinions: sampleOpinions, userAnswers: post.questions ?? [])
     }
 
     // MARK: - Content states
@@ -340,16 +340,15 @@ struct CollectionCardView: View {
                 .font(.system(size: 24, weight: .bold))
                 .foregroundStyle(.black)
 
-            let insight = PaintingInsights(opinions: entry.opinions)
-            let circleColor = insight.colorFeelings.first?.color ?? Color.color3
+            let answers = cardAnswers
 
             Circle()
-                .fill(circleColor)
+                .fill(answers.color)
                 .frame(width: 24, height: 24)
 
             VStack(alignment: .leading, spacing: 6) {
 
-                Text(insight.moods.first?.label ?? "Warm")
+                Text(answers.primary)
                     .font(
                         .system(
                             size: 18,
@@ -359,7 +358,7 @@ struct CollectionCardView: View {
                     )
                     .foregroundStyle(.black)
 
-                Text("Feel Safe")
+                Text(answers.secondary)
                     .font(
                         .system(
                             size: 18,
@@ -447,12 +446,43 @@ struct CollectionCardView: View {
         return String(words.prefix(2).joined(separator: " "))
     }
 
+    // The two mood words and the colour circle shown on the card back, sourced
+    // from this post's own quiz answers: the "color" activity's answer is a hex
+    // string (see `PolaroidDevelopViewModel.answerValue`), every other activity's
+    // answer is a mood word. Falls back to the sample-opinion insight only for
+    // posts synced before answers were carried onto `FeedEntry` (empty `userAnswers`).
+    private var cardAnswers: (primary: String, secondary: String, color: Color) {
+        let rawAnswers = entry.userAnswers.map(\.answer)
+        let moodAnswers = rawAnswers.filter { !$0.isEmpty && !Self.isHexColor($0) }
+        let colorHex = rawAnswers.first(where: Self.isHexColor)
+
+        guard !moodAnswers.isEmpty else {
+            let insight = PaintingInsights(opinions: entry.opinions)
+            return (
+                insight.moods.first?.label ?? "Warm",
+                "Feel Safe",
+                insight.colorFeelings.first?.color ?? Color.color3
+            )
+        }
+
+        return (
+            moodAnswers[0],
+            moodAnswers.count > 1 ? moodAnswers[1] : moodAnswers[0],
+            colorHex.map { Color(hex: $0) } ?? Color.color3
+        )
+    }
+
+    private static func isHexColor(_ value: String) -> Bool {
+        let cleaned = value.hasPrefix("#") ? String(value.dropFirst()) : value
+        return cleaned.count == 6 && cleaned.allSatisfy(\.isHexDigit)
+    }
+
     // Halaman yang di-share: wordmark, polaroid, lalu HANYA jawaban
     // kontekstual + warna yang dipilih. Jawaban deskriptif ("apa yang
     // keliatan") sengaja gak dibawa — itu bagian yang gak menarik dipamerin.
     // Cuma ada di hasil share, kartu di galeri tetap bersih.
     private var shareComposition: some View {
-        let insight = PaintingInsights(opinions: entry.opinions)
+        let answers = cardAnswers
 
         return VStack(spacing: 0) {
             HStack(spacing: 0) {
@@ -472,13 +502,11 @@ struct CollectionCardView: View {
                         .font(.system(size: 27, weight: .bold, design: .rounded))
                         .foregroundStyle(.black)
 
-                    // TODO: pakai jawaban asli user begitu PostResponseDTO.questions
-                    // ikut dibawa ke FeedEntry — sekarang masih dari opinion contoh.
-                    Text(insight.moods.first?.label ?? "Warm")
+                    Text(answers.primary)
                         .font(.system(size: 17, design: .rounded))
                         .foregroundStyle(.black)
 
-                    Text("Feel Safe")
+                    Text(answers.secondary)
                         .font(.system(size: 17, design: .rounded))
                         .foregroundStyle(.black)
                         .padding(.bottom, 2)
@@ -490,7 +518,7 @@ struct CollectionCardView: View {
                 Spacer(minLength: 0)
 
                 Circle()
-                    .fill(insight.colorFeelings.first?.color ?? Color.color3)
+                    .fill(answers.color)
                     .frame(width: 96, height: 96)
             }
             .padding(.horizontal, 26)

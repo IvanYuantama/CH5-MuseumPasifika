@@ -3,7 +3,7 @@
 //  PainThink
 //
 
-struct QuestionAnswerPair: Codable {
+struct QuestionAnswerPair: Codable, Hashable {
     let question: String
     let answer: String
 }
