@@ -6,6 +6,17 @@
 import SwiftUI
 import UIKit
 
+extension String {
+    // True for a bare "#RRGGBB" answer value — the format the color quiz
+    // activity's submitted answer always takes (see `PolaroidDevelopViewModel
+    // .answerValue`), distinguishing it from a mood-word answer with no type
+    // tag carried alongside it over the wire.
+    var isHexColorString: Bool {
+        let cleaned = hasPrefix("#") ? String(dropFirst()) : self
+        return cleaned.count == 6 && cleaned.allSatisfy(\.isHexDigit)
+    }
+}
+
 extension Color {
     var hexString: String {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0

@@ -399,6 +399,24 @@ final class APIClient {
         try Self.validate(response)
     }
 
+    // Public — no auth. Every user's answers for this painting, the raw
+    // material for the painting-wide statistics shown on `PaintingDetailView`.
+    func fetchAllAnswers(paintingID: String) async throws -> [UserAnswerSetResponseDTO] {
+        guard let url = URL(string: Endpoint.paintingAllAnswers(id: paintingID)) else {
+            throw NetworkError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("true", forHTTPHeaderField: "ngrok-skip-browser-warning")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try Self.validate(response)
+
+        let envelope = try JSONDecoder().decode(APIEnvelope<[UserAnswerSetResponseDTO]>.self, from: data)
+        return envelope.data ?? []
+    }
+
     private static func authorizedRequest(url: URL, method: String) async throws -> URLRequest {
         let token = try await SessionManager.shared.token()
         var request = URLRequest(url: url)

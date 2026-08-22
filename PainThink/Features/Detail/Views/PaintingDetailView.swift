@@ -12,6 +12,11 @@ struct PaintingDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     private let insights: PaintingInsights
+    // Always 4 slots for the color chart: real picks first, padded out with
+    // random colors when fewer than 4 distinct colors were actually picked.
+    // Computed once in `init` (not a computed property) so the random padding
+    // doesn't reshuffle on every body re-evaluation.
+    private let displayColorFeelings: [PaintingInsights.ColorFeeling]
     // MENGUBAH INSET HALAMAN UTAMA MENJADI 60
     private let pageInset: CGFloat = 60
     
@@ -34,7 +39,9 @@ struct PaintingDetailView: View {
     ) {
         self.painting = painting
         self.opinions = opinions
-        self.insights = PaintingInsights(opinions: opinions)
+        let insights = PaintingInsights(opinions: opinions, paletteLimit: 4)
+        self.insights = insights
+        self.displayColorFeelings = Self.padColorFeelings(insights.colorFeelings)
         self.onGoToCollection = onGoToCollection
         self.onGoToCamera = onGoToCamera
         self.onBack = onBack
@@ -73,8 +80,8 @@ struct PaintingDetailView: View {
                     ConsensusCard(headline: headline, total: insights.total)
                 }
 
-                if !insights.colorFeelings.isEmpty {
-                    ColorFeelingsCard(feelings: insights.colorFeelings)
+                if !displayColorFeelings.isEmpty {
+                    ColorFeelingsCard(feelings: displayColorFeelings)
                 }
 
                 // Grup tombol bagian bawah
@@ -100,6 +107,27 @@ struct PaintingDetailView: View {
         }
         .toolbarBackground(Color.color1, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
+    }
+
+    // Fills `feelings` out to 4 entries with random (non-repeating) colors
+    // when fewer than 4 were actually picked, so the chart always reads as a
+    // full 4-color spread rather than looking sparse/broken with 1-3 bars.
+    // No-op once there are already 4 or more.
+    private static func padColorFeelings(_ feelings: [PaintingInsights.ColorFeeling]) -> [PaintingInsights.ColorFeeling] {
+        guard !feelings.isEmpty, feelings.count < 4 else { return feelings }
+
+        var padded = feelings
+        var usedHex = Set(feelings.map(\.hex))
+
+        while padded.count < 4 {
+            let hex = String(
+                format: "#%02X%02X%02X",
+                Int.random(in: 0...255), Int.random(in: 0...255), Int.random(in: 0...255)
+            )
+            guard usedHex.insert(hex).inserted else { continue }
+            padded.append(PaintingInsights.ColorFeeling(hex: hex, label: hex, count: 0, share: 0))
+        }
+        return padded
     }
 
     private var backButton: some View {

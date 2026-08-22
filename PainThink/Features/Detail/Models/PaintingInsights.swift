@@ -26,6 +26,8 @@ struct PaintingInsights {
         var id: String { hex }
         let hex: String
         let label: String
+        let count: Int
+        let share: Double
         var color: Color { Color(hex: hex) }
     }
 
@@ -75,7 +77,12 @@ struct PaintingInsights {
         colorFeelings = Self.tally(opinions.map(\.colorHex))
             .prefix(paletteLimit)
             .map { entry in
-                ColorFeeling(hex: entry.value, label: labelByHex[entry.value] ?? entry.value)
+                ColorFeeling(
+                    hex: entry.value,
+                    label: labelByHex[entry.value] ?? entry.value,
+                    count: entry.count,
+                    share: Double(entry.count) / denominator
+                )
             }
     }
 

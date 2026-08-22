@@ -90,7 +90,7 @@ struct CollectionView: View {
     private static func feedEntries(from posts: [PostResponseDTO]) async -> [FeedEntry] {
         await withTaskGroup(of: (Int, FeedEntry).self) { group in
             for (index, post) in posts.enumerated() {
-                group.addTask { (index, await feedEntry(from: post, index: index)) }
+                group.addTask { (index, await feedEntry(from: post)) }
             }
 
             var entries = [FeedEntry?](repeating: nil, count: posts.count)
@@ -101,13 +101,27 @@ struct CollectionView: View {
         }
     }
 
-    // The backend doesn't serve per-post opinions yet, so the Details screen's
-    // statistics reuse the same canned SampleFeed opinion sets as before —
-    // cycled by index so posts still get some spread rather than all showing
-    // identical numbers.
-    private static func feedEntry(from post: PostResponseDTO, index: Int) async -> FeedEntry {
+    // Details statistics are real, sourced from every visitor's answers for
+    // this exact painting/capture, not just this post's own:
+    // - Matched paintings pool every user's structured answers via
+    //   `GET /paintings/:id/answers/all` — they're genuinely the same
+    //   painting, keyed by its backend ID.
+    // - Unmatched ("Untitled") captures have no backend painting to key that
+    //   off of, and *all* of them share the literal title "Untitled" — two
+    //   different unidentified paintings would look identical by that title,
+    //   so pooling across posts would silently merge unrelated paintings'
+    //   stats. Instead each unmatched post's Details screen stays scoped to
+    //   that one capture's own saved Q&A (a pool of one).
+    private static func feedEntry(from post: PostResponseDTO) async -> FeedEntry {
         let matched = try? await APIClient.shared.fetchPainting(byTitle: post.title)
-        let sampleOpinions = SampleFeed.entries[index % SampleFeed.entries.count].opinions
+
+        var opinions: [VisitorOpinion] = []
+        if let matched {
+            let allAnswers = (try? await APIClient.shared.fetchAllAnswers(paintingID: matched.id)) ?? []
+            opinions = visitorOpinions(from: allAnswers.map { $0.answers.map(\.value) })
+        } else {
+            opinions = visitorOpinions(from: [(post.questions ?? []).map(\.answer)])
+        }
 
         let painting = Painting(
             title: post.title,
@@ -116,7 +130,21 @@ struct CollectionView: View {
             museum: post.location.isEmpty ? MuseumInfo.currentName : post.location,
             imageURLString: post.image
         )
-        return FeedEntry(painting: painting, opinions: sampleOpinions, userAnswers: post.questions ?? [])
+        return FeedEntry(painting: painting, opinions: opinions, userAnswers: post.questions ?? [])
+    }
+
+    // Turns every visitor's raw answer values into the crowd-statistics shape
+    // `PaintingInsights` already knows how to tally, so the Details screen
+    // (ConsensusCard/ColorFeelingsCard) needs no changes to go from sample to
+    // real data. Per submitter: only their first non-color answer counts
+    // toward the headline/mood tally, paired with their one color pick.
+    private static func visitorOpinions(from answerValueSets: [[String]]) -> [VisitorOpinion] {
+        answerValueSets.compactMap { values -> VisitorOpinion? in
+            guard let firstMood = values.first(where: { !$0.isEmpty && !$0.isHexColorString }) else { return nil }
+            let colorHex = values.first(where: \.isHexColorString) ?? "#CCCCCC"
+
+            return VisitorOpinion(statement: firstMood, emoji: "🎨", moodLabel: firstMood, colorHex: colorHex, visitorName: "Visitor")
+        }
     }
 
     // MARK: - Content states
@@ -453,8 +481,8 @@ struct CollectionCardView: View {
     // posts synced before answers were carried onto `FeedEntry` (empty `userAnswers`).
     private var cardAnswers: (primary: String, secondary: String, color: Color) {
         let rawAnswers = entry.userAnswers.map(\.answer)
-        let moodAnswers = rawAnswers.filter { !$0.isEmpty && !Self.isHexColor($0) }
-        let colorHex = rawAnswers.first(where: Self.isHexColor)
+        let moodAnswers = rawAnswers.filter { !$0.isEmpty && !$0.isHexColorString }
+        let colorHex = rawAnswers.first(where: \.isHexColorString)
 
         guard !moodAnswers.isEmpty else {
             let insight = PaintingInsights(opinions: entry.opinions)
@@ -470,11 +498,6 @@ struct CollectionCardView: View {
             moodAnswers.count > 1 ? moodAnswers[1] : moodAnswers[0],
             colorHex.map { Color(hex: $0) } ?? Color.color3
         )
-    }
-
-    private static func isHexColor(_ value: String) -> Bool {
-        let cleaned = value.hasPrefix("#") ? String(value.dropFirst()) : value
-        return cleaned.count == 6 && cleaned.allSatisfy(\.isHexDigit)
     }
 
     // Halaman yang di-share: wordmark, polaroid, lalu HANYA jawaban

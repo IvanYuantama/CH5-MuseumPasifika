@@ -42,6 +42,10 @@ enum Endpoint {
         "\(baseURL)/api/v1/paintings/\(id)/answers"
     }
 
+    static func paintingAllAnswers(id: String) -> String {
+        "\(baseURL)/api/v1/paintings/\(id)/answers/all"
+    }
+
     static func post(id: String) -> String {
         "\(baseURL)/api/v1/posts/\(id)"
     }
