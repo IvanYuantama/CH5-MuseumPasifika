@@ -9,7 +9,7 @@ import Observation
 
 @Observable
 final class PolaroidDevelopViewModel {
-    private static let confidenceThreshold = 0.7
+    private static let confidenceThreshold = 0.95
 
     let image: UIImage
     private(set) var activities: [Activity]
