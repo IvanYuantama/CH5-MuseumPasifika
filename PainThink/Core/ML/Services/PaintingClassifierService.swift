@@ -17,8 +17,8 @@ final class PaintingClassifierService {
     private let model: VNCoreMLModel?
 
     init() {
-        guard let modelURL = Bundle.main.url(forResource: "MuseumPaintng2", withExtension: "mlmodelc") else {
-            print("File MuseumPaintng2.mlmodelc tidak ditemukan di Bundle.")
+        guard let modelURL = Bundle.main.url(forResource: "MuseumPaintng19", withExtension: "mlmodelc") else {
+            print("File MuseumPaintng19.mlmodelc tidak ditemukan di Bundle.")
             self.model = nil
             return
         }
@@ -29,7 +29,7 @@ final class PaintingClassifierService {
             let mlModel = try MLModel(contentsOf: modelURL, configuration: configuration)
             self.model = try VNCoreMLModel(for: mlModel)
         } catch {
-            print("Gagal load model MuseumPaintng2: \(error)")
+            print("Gagal load model MuseumPaintng19: \(error)")
             self.model = nil
         }
     }
