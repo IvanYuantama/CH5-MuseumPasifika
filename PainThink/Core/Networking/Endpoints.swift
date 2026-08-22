@@ -6,7 +6,7 @@
 //
 
 enum Endpoint {
-    static let baseURL = "https://discoverably-unlatticed-marylynn.ngrok-free.dev"
+    static let baseURL = "https://painthink.ryansafa.cloud"
 
     // Health
     static let health = "\(baseURL)/health"
