@@ -33,12 +33,16 @@ final class PolaroidDevelopViewModel {
     // Set once a real backend painting match is confirmed; nil for the
     // "Untitled" fallback, since there's no painting to attach answers/dedupe
     // a post against.
-    private var matchedPaintingID: String?
+    private(set) var matchedPaintingID: String?
     // True only once `applyQuestions` swapped in the painting's real question
     // set — only then do `activities` carry backend `questionID`s we can
     // submit answers against.
     private var isUsingBackendQuestions = false
     private var didSubmitResults = false
+    /// Task yang mengupload foto dan mengirim jawaban ke backend.
+    /// PhotoDevelopedView mengawait ini sebelum fetch all-answers,
+    /// agar jawaban user saat ini sudah masuk ke pool statistik.
+    private(set) var syncTask: Task<Void, Never>?
 
     init(image: UIImage) {
         self.image = image
@@ -145,7 +149,7 @@ final class PolaroidDevelopViewModel {
             record?.isUnlocked = true
             if !didSubmitResults {
                 didSubmitResults = true
-                Task { await submitResults() }
+                syncTask = Task { await submitResults() }
             }
         }
     }
@@ -211,13 +215,11 @@ final class PolaroidDevelopViewModel {
         }
     }
 
-    // The color activity's stored answer is a mood label (for UI highlight
-    // matching); the backend wants the hex of the color the user actually
-    // picked, so it's resolved from the matching palette option here.
+    // Untuk colorPaletteMood, jawaban yang tersimpan sudah berupa hex string
+    // (langsung dari ColorSnapPickerView.onSelect sejak free-color pick).
+    // Untuk activity lain (emoji, dragdrop), nilai tersimpan adalah mood label.
+    // Keduanya langsung dikembalikan apa adanya.
     private func answerValue(for activity: Activity) -> String? {
-        guard let label = answers[activity.id] else { return nil }
-        guard activity.kind == .colorPaletteMood else { return label }
-        guard let color = activity.paletteOptions.first(where: { $0.moodLabel == label })?.color else { return label }
-        return color.hexString
+        answers[activity.id]
     }
 }

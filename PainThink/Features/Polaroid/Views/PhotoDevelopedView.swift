@@ -17,11 +17,19 @@ struct PhotoDevelopedView: View {
     let location: String
     let captureDate: String
     let painting: Painting
+    /// Backend painting ID — nil jika lukisan tidak teridentifikasi (fallback "Untitled").
+    let matchedPaintingID: String?
+    /// Task yang mengirim jawaban ke backend. Di-await sebelum fetch opinions
+    /// agar data user saat ini sudah masuk ke pool statistik crowd.
+    let syncTask: Task<Void, Never>?
     let onGoToCamera: () -> Void
     let onGoToCollection: () -> Void
     
     // NavigationPath eksplisit agar bisa pop programmatically dari PaintingDetailView
     @State private var navPath = NavigationPath()
+
+    /// Opinions yang di-fetch dari backend; nil = masih loading, [] = selesai (kosong/gagal).
+    @State private var liveOpinions: [VisitorOpinion]? = nil
     
     var body: some View {
         NavigationStack(path: $navPath) {
@@ -74,24 +82,64 @@ struct PhotoDevelopedView: View {
                 )
             }
         }
+        .task {
+            await loadOpinions()
+        }
     }
 
-    // Opinions aren't served by the backend yet, so the detail screen opens
-    // with the real, on-device-resolved painting but no crowd opinions.
+    // Fetch semua jawaban user untuk lukisan ini dari backend.
+    // Hanya berjalan jika painting berhasil diidentifikasi (matchedPaintingID != nil).
+    private func loadOpinions() async {
+        // Tunggu sampai upload foto + submit jawaban selesai dulu,
+        // baru fetch — supaya jawaban user ini sudah masuk ke pool statistik.
+        await syncTask?.value
+
+        guard let paintingID = matchedPaintingID else {
+            liveOpinions = []
+            return
+        }
+        let allAnswers = (try? await APIClient.shared.fetchAllAnswers(paintingID: paintingID)) ?? []
+        liveOpinions = Self.visitorOpinions(from: allAnswers.map { $0.answers.map(\.value) })
+    }
+
+    // Konversi raw answer values ke VisitorOpinion[] — logika sama dengan CollectionView
+    // agar PaintingInsights bisa langsung menghitung top-4 color tally.
+    private static func visitorOpinions(from answerValueSets: [[String]]) -> [VisitorOpinion] {
+        answerValueSets.compactMap { values -> VisitorOpinion? in
+            guard let firstMood = values.first(where: { !$0.isEmpty && !$0.isHexColorString }) else { return nil }
+            let colorHex = values.first(where: \.isHexColorString) ?? "#CCCCCC"
+            return VisitorOpinion(statement: firstMood, emoji: "🎨", moodLabel: firstMood, colorHex: colorHex, visitorName: "Visitor")
+        }
+    }
+
     private var seeOpinionsButton: some View {
-        NavigationLink(
+        // Tombol di-disable sementara opinions masih di-load (liveOpinions == nil).
+        // Setelah selesai (berhasil atau gagal), tombol langsung aktif.
+        let opinions = liveOpinions ?? []
+        let isLoading = liveOpinions == nil && matchedPaintingID != nil
+
+        return NavigationLink(
             value: FeedEntry(
                 painting: painting,
-                opinions: []
+                opinions: opinions
             )
         ) {
-            Text("See what other saw")
-                .font(.system(size: 14, weight: .medium, design: .rounded))
-                .foregroundStyle(.black)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+            HStack(spacing: 6) {
+                if isLoading {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .scaleEffect(0.75)
+                        .tint(.black)
+                }
+                Text("See what other saw")
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                    .foregroundStyle(.black)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
         }
         .buttonStyle(.plain)
+        .disabled(isLoading)
         .stickerCard(cornerRadius: 8, shadowOffset: CGSize(width: 2, height: 3), fill: Color.color3)
     }
 

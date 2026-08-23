@@ -70,16 +70,15 @@ struct PaintingInsights {
             )
         }
 
-        let labelByHex = Dictionary(
-            opinions.map { ($0.colorHex, $0.moodLabel) },
-            uniquingKeysWith: { first, _ in first }
-        )
-        colorFeelings = Self.tally(opinions.map(\.colorHex))
+        // Warna hex yang dipilih tiap user hampir pasti berbeda piksel demi piksel.
+        // Sebelum di-tally, snap setiap hex ke pusat bucket hue-nya (30° per bucket)
+        // sehingga warna yang secara visual sama tetap dihitung bersama.
+        colorFeelings = Self.tally(opinions.map { Self.groupedHex(for: $0.colorHex) })
             .prefix(paletteLimit)
             .map { entry in
                 ColorFeeling(
                     hex: entry.value,
-                    label: labelByHex[entry.value] ?? entry.value,
+                    label: Self.colorName(forHex: entry.value),
                     count: entry.count,
                     share: Double(entry.count) / denominator
                 )
@@ -103,5 +102,44 @@ struct PaintingInsights {
                 guard lhs.count == rhs.count else { return lhs.count > rhs.count }
                 return (firstSeen[lhs.value] ?? 0) < (firstSeen[rhs.value] ?? 0)
             }
+    }
+
+    // MARK: - Color grouping
+
+    // Jumlah bucket hue. 12 bucket = 30° per segment, sesuai pembagian standar
+    // color wheel (merah, oranye, kuning, hijau, dsb.).
+    private static let hueSteps: Double = 12
+
+    // Nama warna untuk tiap bucket (index 0–11, mulai dari merah di 0°).
+    private static let bucketNames = [
+        "Red", "Orange", "Yellow", "Chartreuse",
+        "Green", "Spring Green", "Cyan", "Sky Blue",
+        "Blue", "Purple", "Magenta", "Pink"
+    ]
+
+    /// Snap hex ke pusat bucket hue-nya.
+    /// Warna dengan hue dalam rentang 30° yang sama menghasilkan hex identik,
+    /// sehingga `tally` menggabungkan mereka menjadi satu kelompok.
+    private static func groupedHex(for hex: String) -> String {
+        let h = hue(of: Color(hex: hex))
+        // Tentukan indeks bucket terdekat (0...hueSteps-1), mod agar 12→0.
+        let bucketIndex = Int((h * hueSteps).rounded()) % Int(hueSteps)
+        let centreHue = Double(bucketIndex) / hueSteps
+        // Gunakan saturation & brightness yang sama dengan color picker.
+        return Color(hue: centreHue, saturation: 0.72, brightness: 0.88).hexString
+    }
+
+    /// Nama warna manusiawi untuk hex bucket.
+    private static func colorName(forHex hex: String) -> String {
+        let h = hue(of: Color(hex: hex))
+        let bucketIndex = Int((h * hueSteps).rounded()) % Int(hueSteps)
+        return bucketNames[bucketIndex]
+    }
+
+    /// Hue komponen (0...1) dari sebuah Color.
+    private static func hue(of color: Color) -> Double {
+        var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        UIColor(color).getHue(&h, saturation: &s, brightness: &b, alpha: &a)
+        return Double(h)
     }
 }
