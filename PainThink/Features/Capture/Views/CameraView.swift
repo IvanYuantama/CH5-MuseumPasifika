@@ -97,8 +97,8 @@ struct CameraView: View {
                 // Bounding box sengaja gak digambar — deteksinya tetap jalan
                 // karena hasilnya dipakai buat crop foto ke area lukisan
                 // (lihat currentBoundingBox di bawah).
-                DetectionOverlayView(objects: cameraManager.detectedObjects)
-                    .clipShape(RoundedRectangle(cornerRadius: 12).inset(by: 10))
+//                DetectionOverlayView(objects: cameraManager.detectedObjects)
+//                    .clipShape(RoundedRectangle(cornerRadius: 12).inset(by: 10))
 
                 // Countdown
                 if let countdown {
