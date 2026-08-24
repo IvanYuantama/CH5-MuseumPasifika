@@ -14,6 +14,7 @@ struct CameraView: View {
     @State private var showShutterFlash = false
     @State private var countdown: Int?
     @State private var lastDragAngle: Double? = nil
+    @State private var viewfinderSize: CGSize = .zero
     
     private var isLandscape: Bool { verticalSizeClass == .compact }
     
@@ -96,6 +97,8 @@ struct CameraView: View {
                 // Bounding box sengaja gak digambar — deteksinya tetap jalan
                 // karena hasilnya dipakai buat crop foto ke area lukisan
                 // (lihat currentBoundingBox di bawah).
+                DetectionOverlayView(objects: cameraManager.detectedObjects)
+                    .clipShape(RoundedRectangle(cornerRadius: 12).inset(by: 10))
 
                 // Countdown
                 if let countdown {
@@ -117,6 +120,13 @@ struct CameraView: View {
             }
             // PERHATIAN: .aspectRatio telah dihapus agar mengikuti frame 339x412 dari portraitLayout
             .animation(.easeInOut(duration: 0.2), value: countdown)
+            .background(
+                GeometryReader { geo in
+                    Color.clear
+                        .onAppear { viewfinderSize = geo.size }
+                        .onChange(of: geo.size) { _, newValue in viewfinderSize = newValue }
+                }
+            )
         }
     
     // MARK: - Shutter button (ring style)
@@ -198,7 +208,9 @@ struct CameraView: View {
             }
             .frame(width: 80, height: 80)
             .scaleEffect(isCapturing ? 0.92 : 1)
+            .opacity(hasHighConfidenceDetection ? 1 : 0.4)
             .animation(.easeOut(duration: 0.12), value: isCapturing)
+            .animation(.easeInOut(duration: 0.2), value: hasHighConfidenceDetection)
             .overlay(alignment: .top) {
                 if showsZoomHint {
                     ZoomHintCallout()
@@ -234,8 +246,46 @@ struct CameraView: View {
     
     // MARK: - Capture logic
     
+    private var hasHighConfidenceDetection: Bool {
+        cameraManager.detectedObjects.contains { $0.confidence >= 0.80 && isFullyInPreview($0.boundingBox) }
+    }
+
+    // Returns true if the normalized bounding box is entirely within the visible
+    // camera preview area, accounting for aspect-fill cropping.
+    private func isFullyInPreview(_ box: CGRect) -> Bool {
+        guard viewfinderSize != .zero else { return false }
+        // Subtract the 10pt padding on all sides to match the actual preview area
+        let size = CGSize(width: viewfinderSize.width - 20, height: viewfinderSize.height - 20)
+        guard size.width > 0, size.height > 0 else { return false }
+
+        let isLandscapePreview = size.width > size.height
+        let imageAspectRatio: CGFloat = isLandscapePreview ? (16.0 / 9.0) : (9.0 / 16.0)
+        let viewAspectRatio = size.width / size.height
+
+        let scaledWidth: CGFloat
+        let scaledHeight: CGFloat
+
+        if viewAspectRatio > imageAspectRatio {
+            scaledWidth = size.width
+            scaledHeight = size.width / imageAspectRatio
+        } else {
+            scaledHeight = size.height
+            scaledWidth = size.height * imageAspectRatio
+        }
+
+        let xOffset = (scaledWidth - size.width) / 2
+        let yOffset = (scaledHeight - size.height) / 2
+
+        let minX = box.minX * scaledWidth - xOffset
+        let maxX = box.maxX * scaledWidth - xOffset
+        let minY = box.minY * scaledHeight - yOffset
+        let maxY = box.maxY * scaledHeight - yOffset
+
+        return minX >= 0 && maxX <= size.width && minY >= 0 && maxY <= size.height
+    }
+
     private func shutterTapped() {
-        guard !isCapturing, countdown == nil else { return }
+        guard !isCapturing, countdown == nil, hasHighConfidenceDetection else { return }
         captureAndSmartCrop()
     }
     
@@ -243,7 +293,7 @@ struct CameraView: View {
         guard !isCapturing else { return }
         isCapturing = true
         
-        let currentBoundingBox = cameraManager.detectedObjects.first?.boundingBox
+        let currentBoundingBox = cameraManager.detectedObjects.first(where: { $0.confidence >= 0.80 && isFullyInPreview($0.boundingBox) })?.boundingBox
         triggerShutterEffect()
         
         cameraManager.capturePhoto { image in
@@ -268,6 +318,7 @@ struct CameraView: View {
     }
     
     private func finishCapture(with finalImage: UIImage?) {
+        isCapturing = false
         withAnimation(.easeIn(duration: 0.2)) { showShutterFlash = false }
         capturedImage = finalImage
         // RootView observes capturedImage via onChange and drives the transition.
