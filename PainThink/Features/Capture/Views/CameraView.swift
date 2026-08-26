@@ -8,15 +8,12 @@ struct CameraView: View {
     @Binding var capturedImage: UIImage?
     var onGoToCollection: (() -> Void)? = nil
     
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
-    
     @State private var isCapturing = false
     @State private var showShutterFlash = false
     @State private var countdown: Int?
     @State private var lastDragAngle: Double? = nil
+    @State private var didDragShutter = false
     @State private var viewfinderSize: CGSize = .zero
-    
-    private var isLandscape: Bool { verticalSizeClass == .compact }
     
     var body: some View {
         ZStack {
@@ -24,13 +21,14 @@ struct CameraView: View {
             
             if cameraManager.permissionDenied {
                 CameraPermissionDeniedView(onNotNow: { onGoToCollection?() })
-            } else if isLandscape {
-                landscapeLayout
             } else {
                 portraitLayout
             }
         }
-        .onAppear { cameraManager.configure() }
+        .onAppear {
+            OrientationLock.enforcePortrait()
+            cameraManager.configure()
+        }
         .onDisappear { cameraManager.stopSession() }
     }
     
@@ -62,22 +60,6 @@ struct CameraView: View {
                 .padding(.bottom, 52)
             }
         }
-    
-    private var landscapeLayout: some View {
-        HStack(spacing: 24) {
-            viewfinderCard
-                .padding(.leading, 24)
-                .padding(.vertical, 20)
-            
-            VStack {
-                Spacer()
-                shutterButton
-                    .frame(width: 80, height: 80)
-                Spacer()
-            }
-            .padding(.trailing, 36)
-        }
-    }
     
     // MARK: - Viewfinder with corner brackets
     
@@ -143,8 +125,6 @@ struct CameraView: View {
                 Circle()
                     .fill(Color.white)
                     .frame(width: 70, height: 70)
-                    .onTapGesture(perform: shutterTapped)
-                    .accessibilityLabel("Shutter — tap to capture")
                 
                 // Outer ring (yellow with 8 tick marks) acting as zoom knob
                 ZStack {
@@ -165,48 +145,10 @@ struct CameraView: View {
                     }
                 }
                 .rotationEffect(.degrees(shutterRotation))
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { value in
-                            let center = CGPoint(x: 40, y: 40)
-                            let vector = CGVector(dx: value.location.x - center.x, dy: value.location.y - center.y)
-                            let angle = atan2(vector.dy, vector.dx)
-                            let degrees = angle * 180 / .pi
-                            
-                            if let last = lastDragAngle {
-                                // Hitung perubahan sudut (delta)
-                                var delta = degrees - last
-                                
-                                // Tangani lonjakan sudut ketika melewati batas -180 dan 180
-                                if delta > 180 { delta -= 360 }
-                                else if delta < -180 { delta += 360 }
-                                
-                                // Tambahkan delta ke total rotasi saat ini
-                                shutterRotation += delta
-                                
-                                // LIMIT MIN DAN MAX ROTASI DI SINI
-                                let maxRotation: Double = 270 // Maksimal putaran 270 derajat (3/4 lingkaran)
-                                shutterRotation = max(0, min(shutterRotation, maxRotation))
-                                
-                                // Convert rotation to zoom (1x to 5x)
-                                let zoomFactor = Float(1 + (shutterRotation / maxRotation) * 4)
-                                cameraManager.setZoom(zoomFactor)
-                            }
-                            
-                            // Simpan sudut saat ini untuk kalkulasi berikutnya
-                            lastDragAngle = degrees
-                        }
-                        .onEnded { _ in
-                            // Reset drag angle saat sentuhan dilepas
-                            lastDragAngle = nil
-                            // Ring-nya udah ketemu sendiri — petunjuk gak perlu lagi.
-                            withAnimation(.easeOut(duration: 0.25)) {
-                                showsZoomHint = false
-                            }
-                        }
-                )
             }
             .frame(width: 80, height: 80)
+            .contentShape(Circle())
+            .gesture(shutterControlGesture)
             .scaleEffect(isCapturing ? 0.92 : 1)
             .opacity(hasHighConfidenceDetection ? 1 : 0.4)
             .animation(.easeOut(duration: 0.12), value: isCapturing)
@@ -220,7 +162,64 @@ struct CameraView: View {
                 }
             }
             .onAppear { showsZoomHint = true }   // tiap masuk kamera, muncul lagi
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Shutter and zoom control")
+            .accessibilityHint("Tap to capture. Drag in a circle to zoom.")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { shutterTapped() }
         }
+
+    private var shutterControlGesture: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                let distanceSquared = value.translation.width * value.translation.width
+                    + value.translation.height * value.translation.height
+                guard distanceSquared > 36 else { return }
+
+                let degrees = shutterAngle(at: value.location)
+
+                // Saat drag baru melewati ambang, jadikan posisi ini titik awal.
+                // Ini mencegah ring meloncat ketika drag dimulai dari tengah.
+                guard didDragShutter else {
+                    didDragShutter = true
+                    lastDragAngle = degrees
+                    return
+                }
+
+                if let last = lastDragAngle {
+                    var delta = degrees - last
+                    if delta > 180 { delta -= 360 }
+                    else if delta < -180 { delta += 360 }
+
+                    let maxRotation: Double = 270
+                    shutterRotation = max(0, min(shutterRotation + delta, maxRotation))
+
+                    let zoomFactor = Float(1 + (shutterRotation / maxRotation) * 4)
+                    cameraManager.setZoom(zoomFactor)
+                }
+
+                lastDragAngle = degrees
+            }
+            .onEnded { _ in
+                let wasDragging = didDragShutter
+                didDragShutter = false
+                lastDragAngle = nil
+
+                if wasDragging {
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        showsZoomHint = false
+                    }
+                } else {
+                    shutterTapped()
+                }
+            }
+    }
+
+    private func shutterAngle(at location: CGPoint) -> Double {
+        let center = CGPoint(x: 40, y: 40)
+        let vector = CGVector(dx: location.x - center.x, dy: location.y - center.y)
+        return atan2(vector.dy, vector.dx) * 180 / .pi
+    }
     
     // MARK: - Polaroid stub (bottom left)
     

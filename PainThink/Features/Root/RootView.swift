@@ -32,6 +32,9 @@ struct RootView: View {
             Color.color1.ignoresSafeArea()
             contentView
         }
+        .onAppear {
+            OrientationLock.enforcePortrait()
+        }
         .animation(.easeInOut(duration: 0.35), value: screenKey)
     }
 

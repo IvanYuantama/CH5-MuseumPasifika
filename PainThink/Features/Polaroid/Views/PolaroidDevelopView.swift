@@ -105,9 +105,30 @@ struct PolaroidDevelopView: View {
                 .padding(.bottom, 15)
             }
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            HStack {
+                backButton
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 4)
+            .background(Color.color1)
+        }
         .task {
             await viewModel.start(context: modelContext)
         }
+    }
+
+    private var backButton: some View {
+        Button(action: onGoToCamera) {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 18, weight: .regular))
+                .foregroundStyle(Color.gray)
+                .frame(width: 44, height: 44, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Back to camera")
     }
 
     private var pageIndicator: some View {
