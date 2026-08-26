@@ -11,6 +11,8 @@ struct PaintingDetailView: View {
 
     @Environment(\.dismiss) private var dismiss
 
+    @State private var paintingPaletteHexes: [String]
+
     private let insights: PaintingInsights
     // MENGUBAH INSET HALAMAN UTAMA MENJADI 60
     private let pageInset: CGFloat = 60
@@ -40,6 +42,15 @@ struct PaintingDetailView: View {
         self.onGoToCamera = onGoToCamera
         self.onBack = onBack
         self.capturedImage = capturedImage
+        _paintingPaletteHexes = State(
+            initialValue: Self.paletteHexes(
+                from: Self.availableImage(for: painting, capturedImage: capturedImage)
+            )
+        )
+    }
+
+    private var displayedColorFeelings: [PaintingInsights.ColorFeeling] {
+        insights.colorFeelings(fillingWith: paintingPaletteHexes, limit: 4)
     }
 
     var body: some View {
@@ -48,7 +59,7 @@ struct PaintingDetailView: View {
                 PaintingHeroCard(
                     painting: painting,
                     opinionCount: insights.total,
-                    paletteColors: insights.colorFeelings.map(\.color),
+                    paletteColors: displayedColorFeelings.map(\.color),
                     capturedImage: capturedImage
                 )
 
@@ -74,8 +85,8 @@ struct PaintingDetailView: View {
                     ConsensusCard(headline: headline, total: insights.total)
                 }
 
-                if !insights.colorFeelings.isEmpty {
-                    ColorFeelingsCard(feelings: insights.colorFeelings)
+                if !displayedColorFeelings.isEmpty {
+                    ColorFeelingsCard(feelings: displayedColorFeelings)
                 }
 
                 // Grup tombol bagian bawah
@@ -101,6 +112,54 @@ struct PaintingDetailView: View {
         }
         .toolbarBackground(Color.color1, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
+        .task(id: painting.imageURLString) {
+            await loadPaintingPalette()
+        }
+    }
+
+    private func loadPaintingPalette() async {
+        let image: UIImage?
+
+        if let capturedImage {
+            image = capturedImage
+        } else if let imageURLString = painting.imageURLString,
+                  let url = URL(string: imageURLString) {
+            image = await ImageCache.shared.preload(url) ?? UIImage(named: "mr_zeus")
+        } else if let assetName = painting.assetName,
+                  let assetImage = UIImage(named: assetName) {
+            image = assetImage
+        } else {
+            image = UIImage(named: "mr_zeus")
+        }
+
+        let extracted = Self.paletteHexes(from: image)
+        if !extracted.isEmpty {
+            paintingPaletteHexes = extracted
+        }
+    }
+
+    private static func availableImage(for painting: Painting, capturedImage: UIImage?) -> UIImage? {
+        if let capturedImage { return capturedImage }
+
+        if let imageURLString = painting.imageURLString,
+           let url = URL(string: imageURLString),
+           let cachedImage = ImageCache.shared.image(for: url) {
+            return cachedImage
+        }
+
+        if let assetName = painting.assetName,
+           let assetImage = UIImage(named: assetName) {
+            return assetImage
+        }
+
+        guard painting.imageURLString == nil else { return nil }
+        return UIImage(named: "mr_zeus")
+    }
+
+    private static func paletteHexes(from image: UIImage?) -> [String] {
+        guard let image else { return [] }
+        return DominantColorExtractor.extractPalette(from: image, count: 4)
+            .map { Color($0).hexString }
     }
 
     private var backButton: some View {

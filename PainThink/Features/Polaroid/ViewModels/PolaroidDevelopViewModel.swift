@@ -215,8 +215,9 @@ final class PolaroidDevelopViewModel {
         }
     }
 
-    // Untuk colorPaletteMood, jawaban yang tersimpan sudah berupa hex string
-    // (langsung dari ColorSnapPickerView.onSelect sejak free-color pick).
+    // Untuk colorPaletteMood, jawaban yang tersimpan selalu berupa hex murni
+    // "#RRGGBB" agar sesuai kontrak backend. Custom picker sudah di-group oleh
+    // ColorSnapPickerView sebelum sampai ke sini.
     // Untuk activity lain (emoji, dragdrop), nilai tersimpan adalah mood label.
     // Keduanya langsung dikembalikan apa adanya.
     private func answerValue(for activity: Activity) -> String? {

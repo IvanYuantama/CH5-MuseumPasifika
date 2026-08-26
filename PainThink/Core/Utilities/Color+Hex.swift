@@ -6,57 +6,27 @@
 import SwiftUI
 import UIKit
 
-enum ColorAnswerSource: String, Hashable {
-    case photoPalette = "photo"
-    case customPicker = "picker"
-    case legacy
-}
-
-struct ColorAnswer: Hashable {
-    let hex: String
-    let source: ColorAnswerSource
-
-    init(hex: String, source: ColorAnswerSource) {
-        let cleaned = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
-        self.hex = "#\(cleaned.uppercased())"
-        self.source = source
-    }
-
-    init?(encodedValue: String) {
-        let components = encodedValue.split(separator: "|", maxSplits: 1).map(String.init)
-        let source: ColorAnswerSource
+extension String {
+    // Backend menyimpan jawaban warna sebagai hex murni. Dua prefix di bawah
+    // hanya dibaca untuk kompatibilitas dengan data yang sempat dibuat oleh
+    // build sebelumnya; semua submit baru kembali memakai "#RRGGBB".
+    var normalizedColorHex: String? {
+        let parts = split(separator: "|", maxSplits: 1).map(String.init)
         let candidate: String
 
-        if components.count == 2, let taggedSource = ColorAnswerSource(rawValue: components[0]) {
-            source = taggedSource
-            candidate = components[1]
+        if parts.count == 2, parts[0] == "photo" || parts[0] == "picker" {
+            candidate = parts[1]
         } else {
-            source = .legacy
-            candidate = encodedValue
+            candidate = self
         }
 
         let cleaned = candidate.hasPrefix("#") ? String(candidate.dropFirst()) : candidate
         guard cleaned.count == 6, cleaned.allSatisfy(\.isHexDigit) else { return nil }
-
-        self.hex = "#\(cleaned.uppercased())"
-        self.source = source
-    }
-
-    var encodedValue: String {
-        guard source != .legacy else { return hex }
-        return "\(source.rawValue)|\(hex)"
-    }
-}
-
-extension String {
-    // Mendukung format lama "#RRGGBB" dan format baru
-    // "photo|#RRGGBB" / "picker|#RRGGBB".
-    var colorAnswer: ColorAnswer? {
-        ColorAnswer(encodedValue: self)
+        return "#\(cleaned.uppercased())"
     }
 
     var isHexColorString: Bool {
-        colorAnswer != nil
+        normalizedColorHex != nil
     }
 }
 

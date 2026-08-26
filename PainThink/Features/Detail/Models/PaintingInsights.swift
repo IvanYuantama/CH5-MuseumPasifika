@@ -36,6 +36,28 @@ struct PaintingInsights {
     let moods: [MoodTally]
     let colorFeelings: [ColorFeeling]
 
+    func colorFeelings(fillingWith paintingPalette: [String], limit: Int = 4) -> [ColorFeeling] {
+        var result = Array(colorFeelings.prefix(limit))
+        var displayedHexes = Set(result.map(\.hex))
+
+        for rawHex in paintingPalette {
+            guard result.count < limit else { break }
+            guard let hex = rawHex.normalizedColorHex,
+                  displayedHexes.insert(hex).inserted else { continue }
+
+            result.append(
+                ColorFeeling(
+                    hex: hex,
+                    label: Self.colorName(forHex: hex),
+                    count: 0,
+                    share: 0
+                )
+            )
+        }
+
+        return result
+    }
+
     init(opinions: [VisitorOpinion], paletteLimit: Int = 4) {
         total = opinions.count
 
@@ -70,19 +92,9 @@ struct PaintingInsights {
             )
         }
 
-        // Hanya jawaban dari picker bebas yang masuk bucket hue. Swatch foto
-        // selalu memakai hex aslinya. Nilai lama belum memiliki source tag dan
-        // diperlakukan sebagai picker agar hasil agregasi lama tetap konsisten.
-        let normalizedColors = opinions.compactMap { opinion -> String? in
-            guard let answer = opinion.colorHex.colorAnswer else { return nil }
-
-            switch answer.source {
-            case .photoPalette:
-                return answer.hex
-            case .customPicker, .legacy:
-                return ColorGrouping.groupedHex(for: answer.hex)
-            }
-        }
+        // Nilai dari backend ditally apa adanya. Swatch foto sudah berupa hex
+        // asli, sedangkan custom picker sudah di-group sebelum disubmit.
+        let normalizedColors = opinions.compactMap(\.colorHex.normalizedColorHex)
 
         colorFeelings = Self.tally(normalizedColors)
             .prefix(paletteLimit)

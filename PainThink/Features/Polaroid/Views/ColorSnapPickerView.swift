@@ -5,8 +5,8 @@
 
 import SwiftUI
 
-// Empat swatch pertama berasal dari warna dominan foto. Sumber pilihan ikut
-// disimpan bersama hex agar detail dapat membedakannya dari picker bebas.
+// Empat swatch pertama berasal dari warna dominan foto dan disimpan sebagai
+// hex asli. Custom picker di-group sebelum hex-nya dikirim ke backend.
 struct ColorSnapPickerView: View {
 
     let activity: Activity
@@ -30,7 +30,7 @@ struct ColorSnapPickerView: View {
         self.selectedLabel = selectedLabel
         self.onSelect = onSelect
 
-        if let hex = selectedLabel?.colorAnswer?.hex {
+        if let hex = selectedLabel?.normalizedColorHex {
             _knob = State(initialValue: Self.hue(of: Color(hex: hex)))
         } else {
             _knob = State(initialValue: 0.5)
@@ -45,9 +45,13 @@ struct ColorSnapPickerView: View {
         Color(hue: knob, saturation: 0.72, brightness: 0.88)
     }
 
+    private var selectedHex: String? {
+        selectedLabel?.normalizedColorHex
+    }
+
     private var isCustomSelection: Bool {
-        guard let answer = selectedLabel?.colorAnswer else { return false }
-        return answer.source != .photoPalette
+        guard let selectedHex else { return false }
+        return !paletteOptions.contains { matches(selectedHex, $0.color.hexString) }
     }
 
     var body: some View {
@@ -76,14 +80,12 @@ struct ColorSnapPickerView: View {
 
     private func paletteButton(_ option: PaletteMoodOption) -> some View {
         let hex = option.color.hexString
-        let selectedAnswer = selectedLabel?.colorAnswer
-        let isSelected = selectedAnswer?.source == .photoPalette
-            && selectedAnswer.map { matches($0.hex, hex) } == true
+        let isSelected = selectedHex.map { matches($0, hex) } == true
 
         return Button {
             Haptics.success()
             showsCustomPicker = false
-            onSelect(ColorAnswer(hex: hex, source: .photoPalette).encodedValue)
+            onSelect(hex)
         } label: {
             colorSwatch(option.color, isSelected: isSelected)
         }
@@ -94,7 +96,7 @@ struct ColorSnapPickerView: View {
 
     private var customPickerButton: some View {
         Button {
-            if let selectedHex = selectedLabel?.colorAnswer?.hex {
+            if let selectedHex {
                 knob = Self.hue(of: Color(hex: selectedHex))
             }
             showsCustomPicker.toggle()
@@ -169,9 +171,7 @@ struct ColorSnapPickerView: View {
                             // hue. Empat swatch foto disimpan sebagai hex asli.
                             let groupedHex = ColorGrouping.groupedHex(for: rawColor.hexString)
                             knob = Self.hue(of: Color(hex: groupedHex))
-                            onSelect(
-                                ColorAnswer(hex: groupedHex, source: .customPicker).encodedValue
-                            )
+                            onSelect(groupedHex)
                         }
                 )
             }

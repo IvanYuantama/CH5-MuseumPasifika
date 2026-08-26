@@ -45,9 +45,11 @@ struct ColorFeelingsCard: View {
                                 .fill(Color(red: 217/255, green: 217/255, blue: 217/255))
                                 .frame(width: barWidth, height: barHeight)
 
-                            Capsule()
-                                .fill(barColor)
-                                .frame(width: barWidth, height: max(6, barHeight * CGFloat(feeling.share)))
+                            if feeling.count > 0 {
+                                Capsule()
+                                    .fill(barColor)
+                                    .frame(width: barWidth, height: max(6, barHeight * CGFloat(feeling.share)))
+                            }
                         }
                         .frame(width: barWidth, height: barHeight, alignment: .bottom)
                     }

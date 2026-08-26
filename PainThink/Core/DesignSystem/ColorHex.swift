@@ -10,7 +10,7 @@ extension Color {
     // Codable for the eventual backend, and they work as dictionary keys when
     // tallying which colours a crowd picked.
     init(hex: String) {
-        let decodedHex = hex.colorAnswer?.hex ?? hex
+        let decodedHex = hex.normalizedColorHex ?? hex
         let cleaned = decodedHex.hasPrefix("#") ? String(decodedHex.dropFirst()) : decodedHex
         var value: UInt64 = 0
         Scanner(string: cleaned).scanHexInt64(&value)
