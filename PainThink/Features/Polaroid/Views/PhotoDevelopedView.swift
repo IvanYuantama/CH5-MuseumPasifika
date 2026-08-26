@@ -19,6 +19,9 @@ struct PhotoDevelopedView: View {
     let painting: Painting
     /// Backend painting ID — nil jika lukisan tidak teridentifikasi (fallback "Untitled").
     let matchedPaintingID: String?
+    /// Snapshot jawaban yang baru selesai dipilih user. Digabungkan secara
+    /// optimistis agar detail langsung ter-update tanpa menunggu read replica backend.
+    let currentAnswerValues: [String]
     /// Task yang mengirim jawaban ke backend. Di-await sebelum fetch opinions
     /// agar data user saat ini sudah masuk ke pool statistik crowd.
     let syncTask: Task<Void, Never>?
@@ -87,19 +90,35 @@ struct PhotoDevelopedView: View {
         }
     }
 
-    // Fetch semua jawaban user untuk lukisan ini dari backend.
-    // Hanya berjalan jika painting berhasil diidentifikasi (matchedPaintingID != nil).
+    // Fetch semua jawaban user untuk lukisan ini dari backend, lalu sisipkan
+    // jawaban lokal user saat ini sebagai source of truth untuk tampilan langsung.
     private func loadOpinions() async {
         // Tunggu sampai upload foto + submit jawaban selesai dulu,
         // baru fetch — supaya jawaban user ini sudah masuk ke pool statistik.
         await syncTask?.value
 
-        guard let paintingID = matchedPaintingID else {
-            liveOpinions = []
-            return
+        var answerSets: [[String]] = []
+
+        if let paintingID = matchedPaintingID {
+            let allAnswers = (try? await APIClient.shared.fetchAllAnswers(paintingID: paintingID)) ?? []
+            let currentUserID = try? await SessionManager.shared.userID()
+
+            // Backend mungkin sudah mengembalikan submit terbaru. Hapus record
+            // milik user ini sebelum menambahkan snapshot lokal agar vote tidak
+            // terhitung dua kali.
+            answerSets = allAnswers
+                .filter { answerSet in
+                    guard let currentUserID else { return true }
+                    return answerSet.userID != currentUserID
+                }
+                .map { $0.answers.map(\.value) }
         }
-        let allAnswers = (try? await APIClient.shared.fetchAllAnswers(paintingID: paintingID)) ?? []
-        liveOpinions = Self.visitorOpinions(from: allAnswers.map { $0.answers.map(\.value) })
+
+        if !currentAnswerValues.isEmpty {
+            answerSets.append(currentAnswerValues)
+        }
+
+        liveOpinions = Self.visitorOpinions(from: answerSets)
     }
 
     // Konversi raw answer values ke VisitorOpinion[] — logika sama dengan CollectionView

@@ -56,6 +56,9 @@ final class PolaroidDevelopViewModel {
 
     var completedCount: Int { answers.count }
     var isUnlocked: Bool { completedCount >= activities.count }
+    var completedAnswerValues: [String] {
+        activities.compactMap { answers[$0.id] }
+    }
 
     func start(context: ModelContext) async {
         guard record == nil else { return }

@@ -37,6 +37,7 @@ struct PolaroidDevelopView: View {
                         museum: viewModel.location
                     ),
                     matchedPaintingID: viewModel.matchedPaintingID,
+                    currentAnswerValues: viewModel.completedAnswerValues,
                     syncTask: viewModel.syncTask,
                     onGoToCamera: onGoToCamera,
                     onGoToCollection: onGoToCollection
