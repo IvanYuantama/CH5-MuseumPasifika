@@ -16,6 +16,9 @@ struct PainThinkApp: App {
         WindowGroup {
             RootView()
                 .statusBarHidden(true)
+                .onAppear {
+                    OrientationLock.enforcePortrait()
+                }
         }
         .modelContainer(for: PolaroidRecord.self)
     }

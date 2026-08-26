@@ -509,13 +509,13 @@ struct CollectionCardView: View {
         let answers = cardAnswers
 
         return VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                Text("PainT").foregroundStyle(.black)
-                Text("hink").foregroundStyle(Color.color3)
-            }
-            .font(.system(size: 30, weight: .heavy, design: .rounded))
-            .padding(.top, 26)
-            .padding(.bottom, 28)
+            Image("Painthink")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 165, height: 71)
+                .accessibilityLabel("PainThink")
+                .padding(.top, 26)
+                .padding(.bottom, 28)
 
             polaroidFace(showsLocation: true, fillsCell: false)
                 .frame(width: 268)
@@ -568,4 +568,3 @@ struct CollectionCardView: View {
         }
     }
 }
-

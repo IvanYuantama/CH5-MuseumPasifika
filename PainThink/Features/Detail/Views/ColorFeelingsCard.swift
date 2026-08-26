@@ -39,9 +39,7 @@ struct ColorFeelingsCard: View {
                         }
                         
                         // Bilah vertikal (Bar Chart) — tingginya sebanding dengan
-                        // porsi pemilih warna ini (`feeling.share`), dengan tinggi
-                        // minimum kecil supaya warna padding (share 0) masih
-                        // kelihatan sebagai bar, bukan garis kosong.
+                        // porsi pemilih warna ini (`feeling.share`).
                         ZStack(alignment: .bottom) {
                             Capsule()
                                 .fill(Color(red: 217/255, green: 217/255, blue: 217/255))

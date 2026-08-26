@@ -5,9 +5,8 @@
 
 import SwiftUI
 
-// Picker warna bebas — user bisa geser knob ke posisi mana saja di spektrum
-// dan warna persis di bawah knob yang tersimpan (sebagai hex string).
-// Tidak ada snap ke palette lukisan; semua titik spektrum valid.
+// Empat swatch pertama berasal dari warna dominan foto. Sumber pilihan ikut
+// disimpan bersama hex agar detail dapat membedakannya dari picker bebas.
 struct ColorSnapPickerView: View {
 
     let activity: Activity
@@ -15,58 +14,126 @@ struct ColorSnapPickerView: View {
     let selectedLabel: String?
     let onSelect: (String) -> Void
 
-    @State private var knob: Double      // posisi 0...1 di sepanjang strip
-    @State private var hasMoved = false
+    @State private var knob: Double
+    @State private var showsCustomPicker = false
 
+    private let swatchSize: CGFloat = 44
     private let stripHeight: CGFloat = 26
+    private let paletteSpacing: CGFloat = 24
+
+    private var paletteRowWidth: CGFloat {
+        swatchSize * 4 + paletteSpacing * 3
+    }
 
     init(activity: Activity, selectedLabel: String?, onSelect: @escaping (String) -> Void) {
         self.activity = activity
         self.selectedLabel = selectedLabel
         self.onSelect = onSelect
-        // Restore posisi knob dari hex yang sudah tersimpan, kalau ada.
-        if let hex = selectedLabel {
+
+        if let hex = selectedLabel?.colorAnswer?.hex {
             _knob = State(initialValue: Self.hue(of: Color(hex: hex)))
         } else {
             _knob = State(initialValue: 0.5)
         }
     }
 
-    /// Warna langsung dari posisi knob — ini yang ditampilkan dan disimpan.
+    private var paletteOptions: [PaletteMoodOption] {
+        Array(activity.paletteOptions.prefix(4))
+    }
+
     private var rawColor: Color {
         Color(hue: knob, saturation: 0.72, brightness: 0.88)
     }
 
-    /// Warna di preview circle:
-    /// - Sebelum disentuh: tampilkan warna yang sudah tersimpan (selectedLabel hex).
-    /// - Setelah disentuh: tampilkan rawColor live.
-    private var previewColor: Color {
-        if !hasMoved, let hex = selectedLabel {
-            return Color(hex: hex)
-        }
-        return rawColor
+    private var isCustomSelection: Bool {
+        guard let answer = selectedLabel?.colorAnswer else { return false }
+        return answer.source != .photoPalette
     }
 
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 14) {
+            HStack(spacing: paletteSpacing) {
+                ForEach(paletteOptions) { option in
+                    paletteButton(option)
+                }
+            }
+            .frame(width: paletteRowWidth, alignment: .leading)
 
-            // Preview warna yang dipilih
+            HStack {
+                customPickerButton
+                Spacer(minLength: 0)
+            }
+            .frame(width: paletteRowWidth)
+
+            if showsCustomPicker {
+                customPicker
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .animation(.easeInOut(duration: 0.2), value: showsCustomPicker)
+    }
+
+    private func paletteButton(_ option: PaletteMoodOption) -> some View {
+        let hex = option.color.hexString
+        let selectedAnswer = selectedLabel?.colorAnswer
+        let isSelected = selectedAnswer?.source == .photoPalette
+            && selectedAnswer.map { matches($0.hex, hex) } == true
+
+        return Button {
+            Haptics.success()
+            showsCustomPicker = false
+            onSelect(ColorAnswer(hex: hex, source: .photoPalette).encodedValue)
+        } label: {
+            colorSwatch(option.color, isSelected: isSelected)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Choose color \(hex)")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private var customPickerButton: some View {
+        Button {
+            if let selectedHex = selectedLabel?.colorAnswer?.hex {
+                knob = Self.hue(of: Color(hex: selectedHex))
+            }
+            showsCustomPicker.toggle()
+        } label: {
             ZStack {
                 Circle()
-                    .fill(.black.opacity(0.15))
-                    .frame(width: 92, height: 92)
+                    .fill(Color.black.opacity(0.15))
+                    .frame(width: swatchSize, height: swatchSize)
                     .offset(x: 2, y: 3)
 
                 Circle()
-                    .fill(previewColor)
-                    .frame(width: 92, height: 92)
-                    .overlay(Circle().stroke(.white.opacity(0.85), lineWidth: 3))
-            }
-            .animation(.spring(response: 0.28, dampingFraction: 0.75), value: previewColor.description)
+                    .fill(Color.gray.opacity(0.28))
+                    .frame(width: swatchSize, height: swatchSize)
+                    .overlay {
+                        Circle()
+                            .stroke(isCustomSelection ? Color.black : Color.clear, lineWidth: 2)
+                    }
 
-            // Strip spektrum + knob
+                HStack(spacing: 3) {
+                    ForEach(0..<3, id: \.self) { _ in
+                        Circle()
+                            .fill(Color.gray)
+                            .frame(width: 6, height: 6)
+                    }
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Choose a custom color")
+        .accessibilityValue(isCustomSelection ? "Selected" : "")
+    }
+
+    private var customPicker: some View {
+        HStack(spacing: 12) {
+            colorSwatch(rawColor, isSelected: isCustomSelection)
+
             GeometryReader { geo in
-                let width = geo.size.width
+                let knobSize = stripHeight + 10
+                let usableWidth = max(geo.size.width - knobSize, 1)
 
                 ZStack(alignment: .leading) {
                     Capsule()
@@ -80,38 +147,62 @@ struct ColorSnapPickerView: View {
                             )
                         )
                         .frame(height: stripHeight)
+                        .padding(.horizontal, knobSize / 2)
 
-                    // Knob — menunjukkan posisi dan warna yang sedang dipilih
                     Circle()
                         .fill(rawColor)
-                        .frame(width: stripHeight + 10, height: stripHeight + 10)
+                        .frame(width: knobSize, height: knobSize)
                         .overlay(Circle().stroke(.white, lineWidth: 3))
                         .shadow(color: .black.opacity(0.2), radius: 3, y: 2)
-                        .offset(x: knob * width - (stripHeight + 10) / 2)
+                        .offset(x: knob * usableWidth)
                 }
-                .frame(height: stripHeight + 10)
+                .frame(height: knobSize)
                 .contentShape(Rectangle())
                 .gesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
-                            hasMoved = true
-                            knob = min(max(value.location.x / width, 0), 1)
+                            knob = min(max((value.location.x - knobSize / 2) / usableWidth, 0), 1)
                         }
                         .onEnded { _ in
                             Haptics.success()
-                            // Simpan hex warna tepat di bawah knob — bebas, tidak di-snap.
-                            onSelect(rawColor.hexString)
+                            // Hanya pilihan dari picker bebas yang masuk bucket
+                            // hue. Empat swatch foto disimpan sebagai hex asli.
+                            let groupedHex = ColorGrouping.groupedHex(for: rawColor.hexString)
+                            knob = Self.hue(of: Color(hex: groupedHex))
+                            onSelect(
+                                ColorAnswer(hex: groupedHex, source: .customPicker).encodedValue
+                            )
                         }
                 )
             }
             .frame(height: stripHeight + 10)
-            .padding(.horizontal, 8)
         }
+        .padding(.top, 2)
     }
 
-    // MARK: - Helper
+    private func colorSwatch(_ color: Color, isSelected: Bool) -> some View {
+        ZStack {
+            Circle()
+                .fill(Color.black.opacity(0.15))
+                .frame(width: swatchSize, height: swatchSize)
+                .offset(x: 2, y: 3)
 
-    /// Hue (0...1) dari sebuah Color — dipakai untuk restore posisi knob.
+            Circle()
+                .fill(color)
+                .frame(width: swatchSize, height: swatchSize)
+                .overlay {
+                    Circle()
+                        .stroke(isSelected ? Color.black : Color.clear, lineWidth: 2)
+                }
+        }
+        .scaleEffect(isSelected ? 1.05 : 1)
+        .animation(.easeOut(duration: 0.15), value: isSelected)
+    }
+
+    private func matches(_ lhs: String, _ rhs: String) -> Bool {
+        lhs.uppercased() == rhs.uppercased()
+    }
+
     private static func hue(of color: Color) -> Double {
         var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
         UIColor(color).getHue(&h, saturation: &s, brightness: &b, alpha: &a)
